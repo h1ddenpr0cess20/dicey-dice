@@ -23,7 +23,7 @@ const host = $('game');
 const loading = $('loading');
 const { createView } = defineView({
   home: { yaw: 0.04, pitch: 0.72, zoom: 1 },
-  limits: { pitch: [0.28, 1.38], zoom: [0.4, 4.2] },
+  limits: { pitch: [0.28, 1.38], zoom: [0.4, 8] },
 });
 const COLORS_DEFAULT = { resin: '#b8d8d0', ink: '#182a35' };
 
