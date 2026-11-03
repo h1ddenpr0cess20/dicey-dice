@@ -228,24 +228,25 @@ button { color: inherit; }
 }
 
 
-/* Saved resin + marking color combinations */
-.color-combo-row { display:flex; align-items:center; gap:6px; width:100%; min-width:0; margin-top:7px; }
-.saved-color-combos { display:flex; align-items:center; gap:5px; flex:1 1 auto; min-width:0; overflow-x:auto; scrollbar-width:thin; scrollbar-color:#476354 transparent; }
-.color-combo-empty { flex:0 0 auto; color:#718679; font:6px 'DM Mono',monospace; white-space:nowrap; }
-.saved-color-combo { display:inline-flex; flex:0 0 auto; overflow:hidden; border:1px solid rgba(184,216,208,.2); border-radius:4px; background:rgba(64,91,73,.22); }
-.saved-color-combo-load { display:inline-flex; align-items:center; gap:5px; max-width:112px; padding:4px 6px; border:0; background:transparent; color:#d9ebdd; cursor:pointer; font:7px 'DM Mono',monospace; }
-.saved-color-combo-load:hover:not(:disabled) { background:rgba(184,216,208,.1); }
-.saved-color-combo-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.color-combo-preview { display:inline-flex; flex:0 0 auto; align-items:center; gap:2px; }
-.color-combo-preview i { display:block; width:8px; height:8px; border:1px solid rgba(255,255,255,.24); border-radius:2px; background:var(--combo-color); }
-.saved-color-combo-remove { width:18px; padding:0; border:0; border-left:1px solid rgba(184,216,208,.14); background:transparent; color:#a8b9aa; cursor:pointer; font-size:12px; }
+/* Saved palettes use the same compact swatch language as built-in finishes. */
+.saved-color-combos { display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; }
+.saved-color-combo { position:relative; display:inline-flex; width:24px; height:24px; flex:0 0 24px; align-items:center; justify-content:center; }
+.saved-color-combo-load { background:linear-gradient(135deg,var(--combo-resin) 0 50%,var(--combo-ink) 50% 100%); }
+.saved-color-combo-load:hover:not(:disabled) { transform:scale(1.06); }
+.saved-color-combo-remove { position:absolute; z-index:1; top:-3px; right:-4px; display:grid; place-items:center; width:12px; height:12px; padding:0; border:1px solid #142019; border-radius:50%; background:#304238; color:#e4eee6; cursor:pointer; font:10px/1 'Manrope',sans-serif; box-shadow:0 1px 4px #0008; }
+.saved-color-combo-remove:hover:not(:disabled) { background:#a84e48; color:#fff; }
 .saved-color-combo-load:disabled,.saved-color-combo-remove:disabled { opacity:.35; cursor:default; }
-.color-combo-save { flex:0 0 auto; padding:4px 6px; font-size:6px; }
+.swatch-save-colors { display:grid; place-items:center; border-style:dashed; background:transparent; color:#9db3a2; font:15px/1 'DM Mono',monospace; }
+.swatch-save-colors:hover:not(:disabled) { border-color:#a9c8b4; background:#b8d8d01a; color:#e0eee3; }
+.swatch-save-colors:disabled { opacity:.3; cursor:default; }
+@media(max-width:900px) {
+  .saved-color-combos { gap:5px; }
+}
 @media(max-width:600px) {
   .finish-section { display:grid; grid-template-columns:1fr; align-items:center; gap:6px; }
   .finish-section .section-heading { margin:0; }
   .finish-controls { justify-content:flex-start; }
-  .swatches { gap:8px; }
-  .color-combo-row { margin-top:0; }
-  .saved-color-combo-load { max-width:130px; }
+  .swatches { gap:7px; align-items:center; flex-wrap:wrap; }
+  .saved-color-combos { gap:6px; }
+  .swatch-save-colors { margin-left:1px; }
 }
