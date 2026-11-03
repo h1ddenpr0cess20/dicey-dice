@@ -7,6 +7,7 @@ const DIE_SPACING = 1.52;
 const DIE_RADIUS = 0.92;
 const CAMERA_DISTANCE = 11;
 const CAMERA_FOV = 35;
+const MAX_ZOOM = 8;
 const TARGET_Y = 0.85;
 const UP = new GFX.Vector3(0, 1, 0);
 const DOWN = new GFX.Vector3(0, -1, 0);
@@ -346,7 +347,7 @@ export function createDiceWorld(
 
   function zoomBy(factor) {
     const minimum = requiredZoom();
-    stage.view.aim.zoom = Math.max(minimum, Math.min(4.2, stage.view.aim.zoom * factor));
+    stage.view.aim.zoom = Math.max(minimum, Math.min(MAX_ZOOM, stage.view.aim.zoom * factor));
     return stage.view.aim.zoom;
   }
 
