@@ -70,6 +70,10 @@
               <button type="button" class="swatch" data-resin="#bd9652" data-ink="#2a2115" style="--swatch:#bd9652" aria-label="Amber dice"></button>
               <button type="button" class="swatch" data-resin="#e7e1d4" data-ink="#2a3032" style="--swatch:#e7e1d4" aria-label="Ivory dice"></button>
             </div>
+            <div class="color-combo-row">
+              <div id="saved-color-combos" class="saved-color-combos" aria-label="Saved custom color combinations"></div>
+              <button id="save-color-combo" class="text-button color-combo-save" type="button">+ SAVE COLORS</button>
+            </div>
           </section>
 
           <section class="roll-section">
@@ -93,6 +97,7 @@
       </section>
 
       <dialog id="save-preset-dialog" class="preset-dialog"><form method="dialog"><div class="dialog-heading"><strong>Save a custom preset</strong><button class="dialog-close" value="cancel" aria-label="Close">×</button></div><label for="save-preset-name">PRESET NAME</label><input id="save-preset-name" maxlength="24" autocomplete="off" placeholder="e.g. Shadowrun pool"/><div class="dialog-actions"><button id="confirm-save-preset" type="button">SAVE PRESET</button><button value="cancel">CANCEL</button></div></form></dialog>
+      <dialog id="save-color-combo-dialog" class="preset-dialog"><form method="dialog"><div class="dialog-heading"><strong>Save a color combination</strong><button class="dialog-close" value="cancel" aria-label="Close">×</button></div><label for="save-color-combo-name">COLOR COMBO NAME</label><input id="save-color-combo-name" maxlength="24" autocomplete="off" placeholder="e.g. Moonstone"/><div class="dialog-actions"><button id="confirm-save-color-combo" type="button">SAVE COLORS</button><button value="cancel">CANCEL</button></div></form></dialog>
       <div id="loading" role="status"><span class="loading-mark">D</span><b>SETTING THE TABLE</b><small>PREPARING YOUR DICE</small></div>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
