@@ -5,6 +5,7 @@ import {
   DICE_CATALOG, formatDieValue, getDiceCounts, MAX_DICE,
   setAllHeld, setDiceCount, setDieHeld,
   createSavedPreset, normalizeSavedPresets, applySavedPreset, MAX_SAVED_PRESETS,
+  createSavedColorCombo, normalizeSavedColorCombos, MAX_SAVED_COLOR_COMBOS,
 } from '../src/sim.js';
 
 test('the default tray starts with five pip-marked D6', () => {
@@ -93,6 +94,26 @@ test('custom presets preserve dice counts and colors', () => {
   assert.equal(preset.resin, '#6f5b9a');
   assert.deepEqual(getDiceCounts(applySavedPreset(createTrayState(), preset).dice), getDiceCounts(state.dice));
 });
+test('custom color combos preserve named resin and marking colors', () => {
+  const combo = createSavedColorCombo('Moonstone', { resin: '#6F5B9A', ink: '#F2E6FF' }, 'moonstone');
+  assert.deepEqual(combo, { id: 'moonstone', name: 'Moonstone', resin: '#6f5b9a', ink: '#f2e6ff' });
+});
+
+test('custom color combos reject invalid names and colors', () => {
+  assert.throws(() => createSavedColorCombo(' ', { resin: '#ffffff', ink: '#000000' }), /name/);
+  assert.throws(() => createSavedColorCombo('Too long '.repeat(4), { resin: '#ffffff', ink: '#000000' }), /24 characters/);
+  assert.throws(() => createSavedColorCombo('Broken', { resin: 'red', ink: '#000000' }), /valid resin and marking/);
+});
+
+test('saved color combos are sanitized, deduplicated, and capped', () => {
+  const combos = Array.from({ length: MAX_SAVED_COLOR_COMBOS + 3 }, (_, index) =>
+    createSavedColorCombo('Combo ' + index, { resin: '#ffffff', ink: '#000000' }, 'combo-' + index));
+  const list = normalizeSavedColorCombos([combos[0], combos[0], { ...combos[1], name: combos[0].name }, { ...combos[2], ink: 'transparent' }, ...combos]);
+  assert.equal(list.length, MAX_SAVED_COLOR_COMBOS);
+  assert.equal(list[0].id, 'combo-0');
+  assert.equal(list.some((combo) => combo.id === 'combo-2'), false);
+});
+
 test('custom presets reject blank names and empty trays', () => {
   assert.throws(() => createSavedPreset(' ', createTrayState(), {}), /name/);
   assert.throws(() => createSavedPreset('Empty', clearTray(createTrayState()), {}), /at least one die/);
