@@ -11,7 +11,7 @@
     "test": "node --test"
   },
   "dependencies": {
-    "madness-engine": "github:h1ddenpr0cess20/madness-engine#d65c12844b6f83f697ef1895a1a2b56fe7474247"
+    "madness-engine": "github:h1ddenpr0cess20/madness-engine#64742baccbfc9ade128cd497baf00e1807d5d8de"
   },
   "devDependencies": {
     "vite": "^7.1.0"

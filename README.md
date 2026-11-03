@@ -11,7 +11,7 @@ A browser-based 3D dice tray for tabletop nights, roleplaying games, classic dic
 - Roll all dice or reroll only dice that are not kept.
 - Keep individual results between throws, or release all kept dice.
 - Custom resin and marking colours, with curated colour swatches.
-- Readable per-die results, totals, copyable result summaries, and the last ten throws.
+- Readable per-die results, totals, and the last ten throws.
 - Drag-to-orbit 3D stage, mouse-wheel zoom, touch pinch zoom, and double-click camera reset.
 - Responsive tray layout for desktop, tablet, and mobile.
 
@@ -19,7 +19,7 @@ Dicey is a general-purpose dice tray. Presets configure useful dice pools; they 
 
 ## Development
 
-The app uses the Madness Engine package and its createDieProp polyhedral dice.
+The app uses Madness Engine's `createDieProp` polyhedral dice and is pinned to merge commit [`64742baccbfc9ade128cd497baf00e1807d5d8de`](https://github.com/h1ddenpr0cess20/madness-engine/commit/64742baccbfc9ade128cd497baf00e1807d5d8de), which includes the D4 corner-numeral redesign from PR [#43](https://github.com/h1ddenpr0cess20/madness-engine/pull/43).
 
 Run the simulation and 3D world tests with:
 
@@ -36,4 +36,4 @@ Run the simulation and 3D world tests with:
 
 ## Dice geometry
 
-Dicey uses the Madness Engine 3D dice meshes and face-reading pipeline for its virtual dice. The D4 relies on the engine's shared geometry and orientation fixes; keep the engine dependency current when updating dice rendering.
+Dicey uses the Madness Engine 3D dice meshes and face-reading pipeline for its virtual dice. The D4 lands on a triangular face; its engine face value corresponds to the number on the opposite top vertex, matching the corner numerals displayed on the new D4.
