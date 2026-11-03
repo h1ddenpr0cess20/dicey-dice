@@ -175,7 +175,7 @@ function installOrbitControls() {
     if (lastSinglePointer) {
       const dx = event.clientX - previous.x;
       const dy = event.clientY - previous.y;
-      stage.view.turn(-dx * 0.006, -dy * 0.0045);
+      stage.view.turn(-dx * 0.006, dy * 0.0045);
       world.keepFramed();
     }
     lastSinglePointer = { x: event.clientX, y: event.clientY };
