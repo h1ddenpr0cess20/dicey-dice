@@ -71,36 +71,24 @@ function persistSavedColorCombos() {
 function renderSavedColorCombos() {
   const root = $('saved-color-combos');
   root.replaceChildren();
-  if (!savedColorCombos.length) {
-    const empty = document.createElement('span');
-    empty.className = 'color-combo-empty';
-    empty.textContent = 'No saved colors';
-    root.append(empty);
-  }
+  const colors = currentColors();
+
   for (const combo of savedColorCombos) {
     const item = document.createElement('span');
     item.className = 'saved-color-combo';
 
     const apply = document.createElement('button');
     apply.type = 'button';
-    apply.className = 'saved-color-combo-load';
+    apply.className = 'swatch saved-color-combo-load';
     apply.dataset.loadColorCombo = combo.id;
+    apply.dataset.resin = combo.resin;
+    apply.dataset.ink = combo.ink;
+    apply.style.setProperty('--combo-resin', combo.resin);
+    apply.style.setProperty('--combo-ink', combo.ink);
+    apply.classList.toggle('selected', colors.resin === combo.resin && colors.ink === combo.ink);
     apply.disabled = isRolling;
+    apply.title = combo.name;
     apply.setAttribute('aria-label', 'Apply ' + combo.name + ' color combination');
-
-    const preview = document.createElement('span');
-    preview.className = 'color-combo-preview';
-    preview.setAttribute('aria-hidden', 'true');
-    const resinDot = document.createElement('i');
-    resinDot.style.setProperty('--combo-color', combo.resin);
-    const inkDot = document.createElement('i');
-    inkDot.style.setProperty('--combo-color', combo.ink);
-    preview.append(resinDot, inkDot);
-
-    const name = document.createElement('span');
-    name.className = 'saved-color-combo-name';
-    name.textContent = combo.name;
-    apply.append(preview, name);
 
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -108,6 +96,7 @@ function renderSavedColorCombos() {
     remove.dataset.removeColorCombo = combo.id;
     remove.textContent = '×';
     remove.disabled = isRolling;
+    remove.title = 'Delete ' + combo.name;
     remove.setAttribute('aria-label', 'Delete ' + combo.name + ' color combination');
 
     item.append(apply, remove);
