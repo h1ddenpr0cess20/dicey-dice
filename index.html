@@ -46,11 +46,12 @@
               <button type="button" data-preset="craps"><b>CRAPS</b><small>2 D6</small></button>
               <button type="button" data-preset="dnd"><b>D&amp;D SET</b><small>Polyhedral</small></button>
               <button type="button" data-preset="percentile"><b>PERCENTILE</b><small>D10 + D%</small></button>
-              <button type="button" data-preset="pips"><b>PIP DICE</b><small>5 × PIP D6</small></button>
+              <div id="saved-preset-buttons" class="saved-preset-buttons" aria-label="Your saved setups"></div>
             </div>
           </div>
           <div class="tray-meta">
             <span id="pool-summary">5 dice selected</span>
+            <button id="save-preset" class="text-button" type="button">+ SAVE SETUP</button>
             <button id="clear-pool" class="text-button" type="button">CLEAR TRAY</button>
           </div>
         </div>
@@ -97,6 +98,7 @@
         </div>
       </section>
 
+      <dialog id="save-preset-dialog" class="preset-dialog"><form method="dialog"><div class="dialog-heading"><strong>Save a custom preset</strong><button class="dialog-close" value="cancel" aria-label="Close">×</button></div><label for="save-preset-name">PRESET NAME</label><input id="save-preset-name" maxlength="24" autocomplete="off" placeholder="e.g. Shadowrun pool"/><div class="dialog-actions"><button id="confirm-save-preset" type="button">SAVE PRESET</button><button value="cancel">CANCEL</button></div></form></dialog>
       <div id="loading" role="status"><span class="loading-mark">D</span><b>SETTING THE TABLE</b><small>PREPARING YOUR DICE</small></div>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>

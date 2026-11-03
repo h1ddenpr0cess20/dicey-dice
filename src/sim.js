@@ -166,3 +166,36 @@ export function formatResults(dice) {
     .map((die) => formatDieValue(die.type, die.value))
     .join(', ');
 }
+
+
+export const MAX_SAVED_PRESETS = 12;
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+export function createSavedPreset(name, state, colors, id = 'custom-' + Date.now().toString(36)) {
+  const clean = String(name ?? '').trim().replace(/\s+/g, ' ');
+  if (!clean) throw new TypeError('Enter a name for this preset.');
+  if (clean.length > 24) throw new RangeError('Preset names must be 24 characters or fewer.');
+  if (!state?.dice?.length) throw new Error('Add at least one die before saving a preset.');
+  const safe = (v, fallback) => typeof v === 'string' && HEX_COLOR.test(v) ? v.toLowerCase() : fallback;
+  return { id: String(id), name: clean, counts: getDiceCounts(state.dice), resin: safe(colors?.resin, '#b8d8d0'), ink: safe(colors?.ink, '#182a35') };
+}
+export function normalizeSavedPresets(value) {
+  if (!Array.isArray(value)) return [];
+  const result = [], seen = new Set();
+  for (const p of value) {
+    if (!p || typeof p !== 'object') continue;
+    const id = typeof p.id === 'string' ? p.id.slice(0,64) : '';
+    const name = typeof p.name === 'string' ? p.name.trim().replace(/\s+/g,' ').slice(0,24) : '';
+    if (!id || !name || seen.has(id)) continue;
+    const counts = emptyCounts();
+    for (const {id:type} of DICE_CATALOG) counts[type] = Math.max(0,Math.min(MAX_PER_TYPE,Math.floor(Number(p.counts?.[type])||0)));
+    if (!Object.values(counts).some(Boolean)) continue;
+    const safe = (v,f) => typeof v === 'string' && HEX_COLOR.test(v) ? v.toLowerCase() : f;
+    result.push({id,name,counts:getDiceCounts(createTrayState(counts).dice),resin:safe(p.resin,'#b8d8d0'),ink:safe(p.ink,'#182a35')});
+    seen.add(id); if(result.length===MAX_SAVED_PRESETS) break;
+  }
+  return result;
+}
+export function applySavedPreset(state, preset) {
+  if (!preset || typeof preset !== 'object') throw new TypeError('A saved preset is required.');
+  return createTrayState(preset.counts);
+}

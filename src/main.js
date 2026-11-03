@@ -5,6 +5,7 @@ import './style.css';
 import {
   applyPreset as applyDicePreset,
   applyRoll,
+  applySavedPreset, createSavedPreset, normalizeSavedPresets, MAX_SAVED_PRESETS,
   clearTray,
   createTrayState,
   DICE_CATALOG,
@@ -32,7 +33,6 @@ let stage = null;
 let audio = null;
 let isRolling = false;
 let toastTimer = null;
-let lastResultText = '';
 
 function announce(message) {
   const toast = $('toast');
@@ -46,9 +46,36 @@ function setStatus(message) {
   $('result-total').textContent = message;
 }
 
-function currentColors() {
-  return { resin: $('resin-color').value, ink: $('ink-color').value };
+function currentColors() { return { resin: $('resin-color').value, ink: $('ink-color').value }; }
+const STORAGE_KEY = 'dicey.saved-presets.v1';
+let savedPresets = [];
+function loadSavedPresets() { try { savedPresets = normalizeSavedPresets(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')); } catch { savedPresets=[]; } }
+function persistSavedPresets() { try { localStorage.setItem(STORAGE_KEY,JSON.stringify(savedPresets)); } catch { announce('Browser storage is unavailable.'); } }
+function renderSavedPresets() {
+ const root=$('saved-preset-buttons'); root.replaceChildren();
+ for(const p of savedPresets) {
+  const wrap=document.createElement('span'); wrap.className='saved-preset-item';
+  const load=document.createElement('button'); load.type='button'; load.className='saved-preset-load'; load.dataset.loadPreset=p.id; load.textContent=p.name; load.disabled=isRolling;
+  const del=document.createElement('button'); del.type='button'; del.className='saved-preset-remove'; del.dataset.removePreset=p.id; del.textContent='×'; del.setAttribute('aria-label','Delete '+p.name); del.disabled=isRolling;
+  wrap.append(load,del); root.append(wrap);
+ }
 }
+function saveCurrentPreset() {
+ const input=$('save-preset-name'), name=input.value.trim();
+ if(!name){input.setCustomValidity('Enter a preset name.');input.reportValidity();return;}
+ if(savedPresets.some(p=>p.name.toLowerCase()===name.toLowerCase())){input.setCustomValidity('That preset name already exists.');input.reportValidity();return;}
+ if(savedPresets.length>=MAX_SAVED_PRESETS){announce('Maximum of '+MAX_SAVED_PRESETS+' saved presets.');return;}
+ input.setCustomValidity('');
+ const p=createSavedPreset(name,state,currentColors(),'custom-'+Date.now().toString(36));
+ savedPresets=[p,...savedPresets];persistSavedPresets();renderSavedPresets();$('save-preset-dialog').close();input.value='';announce('Saved '+p.name);
+}
+function loadCustomPreset(id) {
+ const p=savedPresets.find(x=>x.id===id);if(!p||isRolling)return;
+ state=applySavedPreset(state,p);$('resin-color').value=p.resin;$('ink-color').value=p.ink;
+ document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('selected',b.dataset.resin===p.resin&&b.dataset.ink===p.ink));
+ syncWorld();render();announce('Loaded '+p.name);
+}
+function deleteCustomPreset(id) { savedPresets=savedPresets.filter(p=>p.id!==id);persistSavedPresets();renderSavedPresets(); }
 
 function renderCountControls() {
   const counts = getDiceCounts(state.dice);
@@ -118,8 +145,6 @@ function renderResults() {
     empty.className = 'empty-results';
     empty.textContent = state.dice.length ? 'Roll the tray to see your results. Keep dice to save them for the next throw.' : 'Add dice to your tray to get started.';
     root.append(empty);
-    $('copy-results').disabled = true;
-    lastResultText = '';
     return;
   }
 
@@ -143,12 +168,7 @@ function renderResults() {
   }
 
   const total = rolled.reduce((sum, die) => sum + Number(die.value), 0);
-  $('copy-results').disabled = false;
   $('result-total').textContent = rolled.length + ' dice · total ' + total;
-  lastResultText = rolled.map((die) => {
-    const label = DICE_CATALOG.find((entry) => entry.id === die.type).label;
-    return label + ': ' + formatDieValue(die.type, die.value) + (die.held ? ' (kept)' : '');
-  }).join(' | ') + ' | Total: ' + total;
 }
 
 function render() {
@@ -165,6 +185,8 @@ function render() {
   $('roll-caption').textContent = unheld === totalDice ? 'Roll the whole tray' : unheld === 0 ? 'All dice are kept' : unheld + ' dice will roll · ' + (totalDice - unheld) + ' kept';
   $('roll-button').classList.toggle('is-rolling', isRolling);
   for (const button of $('preset-buttons').querySelectorAll('button')) button.disabled = isRolling;
+  renderSavedPresets();
+  $('save-preset').disabled=isRolling||totalDice===0||savedPresets.length>=MAX_SAVED_PRESETS;
   renderCountControls();
   renderResults();
   renderHistory();
@@ -312,6 +334,7 @@ function installOrbitControls() {
 
 async function boot() {
   try {
+    loadSavedPresets();
     stage = await createStage(host, {
       view: createView(),
       backdrop: '#101814',
@@ -334,9 +357,13 @@ async function boot() {
       if (button && !button.disabled) changeCount(button.dataset.changeType, Number(button.dataset.changeBy));
     });
     $('preset-buttons').addEventListener('click', (event) => {
-      const button = event.target.closest('button[data-preset]');
-      if (button && !button.disabled) applyPreset(button.dataset.preset);
+      const b=event.target.closest('button[data-preset]');const l=event.target.closest('[data-load-preset]');const d=event.target.closest('[data-remove-preset]');
+      if(b&&!b.disabled)applyPreset(b.dataset.preset);else if(l&&!l.disabled)loadCustomPreset(l.dataset.loadPreset);else if(d&&!d.disabled)deleteCustomPreset(d.dataset.removePreset);
     });
+    $('save-preset').addEventListener('click',()=>{if(isRolling||!state.dice.length)return;$('save-preset-name').value='';$('save-preset-name').setCustomValidity('');$('save-preset-dialog').showModal();$('save-preset-name').focus();});
+    $('confirm-save-preset').addEventListener('click',saveCurrentPreset);
+    $('save-preset-name').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveCurrentPreset();}});
+
     $('clear-pool').addEventListener('click', () => {
       if (isRolling) return;
       state = clearTray(state);
@@ -349,15 +376,6 @@ async function boot() {
       state = setAllHeld(state, false);
       for (const die of state.dice) world.setHeld(die.id, false);
       render();
-    });
-    $('copy-results').addEventListener('click', async () => {
-      if (!lastResultText) return;
-      try {
-        await navigator.clipboard.writeText(lastResultText);
-        announce('Results copied.');
-      } catch {
-        announce('Clipboard access is unavailable in this browser.');
-      }
     });
     $('resin-color').addEventListener('change', () => setColors($('resin-color').value, $('ink-color').value));
     $('ink-color').addEventListener('change', () => setColors($('resin-color').value, $('ink-color').value));
@@ -377,6 +395,7 @@ async function boot() {
       world.setLayout(host.clientWidth / Math.max(1, host.clientHeight));
     });
     resizeObserver.observe(host);
+    const dock=$('control-dock');const syncDock=()=>document.documentElement.style.setProperty('--dock-height',Math.ceil(dock.getBoundingClientRect().height)+'px');const dockObserver=new ResizeObserver(syncDock);dockObserver.observe(dock);window.addEventListener('resize',syncDock,{passive:true});syncDock();
 
     stage.run((dt) => {
       stage.view.step(dt);

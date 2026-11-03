@@ -2,7 +2,6 @@ import * as GFX from 'madness-engine/gfx';
 import { createDieProp } from 'madness-engine/props/dice';
 
 const TABLE_TOP = 0.31;
-const DIE_BASE_Y = TABLE_TOP + 0.56;
 const DIE_SCALE = 0.83;
 const DIE_SPACING = 1.52;
 const DIE_RADIUS = 0.92;
@@ -136,15 +135,6 @@ function createDieSlot(scene, spec, index, position, colors) {
   anchor.position.y = baseY;
   tumble.add(prop.group);
 
-  const ringMaterial = mat(spec.held ? '#d4ad70' : '#80ad96', 0.4, 0.25);
-  ringMaterial.transparent = true;
-  ringMaterial.opacity = spec.held ? 0.9 : 0.32;
-  const ring = new GFX.Mesh(new GFX.TorusGeometry(0.55, 0.012, 8, 48), ringMaterial);
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = TABLE_TOP + REST_GAP - baseY;
-  ring.name = 'hold_ring_' + spec.id;
-  anchor.add(ring);
-
   return {
     id: spec.id,
     index,
@@ -152,7 +142,6 @@ function createDieSlot(scene, spec, index, position, colors) {
     anchor,
     tumble,
     prop,
-    ring,
     held: Boolean(spec.held),
     value: spec.value ?? null,
     baseY,
@@ -260,9 +249,6 @@ export function createDiceWorld(
       disposeGroup(table.group);
     }
     table = createTable(scene, Math.max(1, columns), Math.max(1, rows));
-    for (let index = 0; index < dice.length; index++) {
-      dice[index].ring.position.set(0, -0.48, 0);
-    }
     updateCamera();
   }
 
@@ -344,7 +330,6 @@ export function createDiceWorld(
       die.tumble.quaternion.identity();
       die.baseY = entry.targetY;
       die.anchor.position.set(entry.baseX, die.baseY, entry.baseZ);
-      die.ring.position.y = TABLE_TOP + REST_GAP - die.baseY;
       die.value = topFaceOf(die);
       results.push({ id: die.id, value: die.value });
     }
@@ -356,8 +341,6 @@ export function createDiceWorld(
     const die = dice.find((entry) => entry.id === id);
     if (!die) return false;
     die.held = Boolean(held);
-    die.ring.material.color.set(die.held ? '#d4ad70' : '#80ad96');
-    die.ring.material.opacity = die.held ? 0.9 : 0.32;
     return true;
   }
 
