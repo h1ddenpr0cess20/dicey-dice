@@ -48,12 +48,13 @@ button { color: inherit; }
 .copy-button:disabled { opacity: .35; cursor: default; }
 .result-dice { display: flex; align-items: center; gap: 6px; margin-top: 7px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #476354 transparent; padding-bottom: 2px; }
 .empty-results { padding: 7px 0; color: #8fa094; font-size: 9px; }
-.result-chip { flex: 0 0 auto; display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 8px; min-width: 90px; padding: 5px 7px; border: 1px solid rgba(184,216,208,.17); border-radius: 4px; background: rgba(184,216,208,.055); }
+.result-chip { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 8px; row-gap: 2px; min-width: 90px; padding: 5px 7px; border: 1px solid rgba(184,216,208,.17); border-radius: 4px; background: rgba(184,216,208,.055); }
 .result-chip.is-held { border-color: rgba(212,173,112,.6); background: rgba(212,173,112,.1); }
-.result-chip > small { color: #82968a; font: 7px 'DM Mono',monospace; }
-.result-chip > b { color: var(--mint); font: 600 15px 'DM Mono',monospace; }
+.result-chip > small { grid-column: 1; grid-row: 1; color: #82968a; font: 7px 'DM Mono',monospace; }
+.result-chip > b { grid-column: 1; grid-row: 2; color: var(--mint); font: 600 15px 'DM Mono',monospace; }
 .result-chip.is-held > b { color: #e3bd82; }
 .keep-button { padding: 3px 5px; border: 1px solid var(--line); border-radius: 3px; background: #15221b; color: #a2b7a7; cursor: pointer; font: 7px 'DM Mono',monospace; }
+.result-chip > .keep-button { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 .is-held .keep-button { border-color: #b58f5d8c; background: #59442d; color: #ffe0ad; }
 .keep-button:disabled { opacity: .35; cursor: default; }
 
@@ -153,7 +154,7 @@ button { color: inherit; }
   .stage-title p { max-width: 160px; font-size: 8px; }
   .result-shelf { width: calc(100% - 20px); bottom: calc(var(--dock-height) + 7px); padding: 6px 8px; }
   .result-shelf-head strong { font-size: 9px; }
-  .result-chip { min-width: 81px; gap: 5px; padding: 4px 5px; }
+  .result-chip { min-width: 81px; column-gap: 5px; row-gap: 2px; padding: 4px 5px; }
   .result-chip > b { font-size: 13px; }
   .keep-button { font-size: 6px; }
   .control-dock { height: auto; min-height: 0; grid-template-rows: auto auto auto; gap: 7px; padding: 8px 10px max(8px,env(safe-area-inset-bottom)); }
