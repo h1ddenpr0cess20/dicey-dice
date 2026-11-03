@@ -6,6 +6,7 @@ import {
   applyPreset as applyDicePreset,
   applyRoll,
   applySavedPreset, createSavedPreset, normalizeSavedPresets, MAX_SAVED_PRESETS,
+  createSavedColorCombo, normalizeSavedColorCombos, MAX_SAVED_COLOR_COMBOS,
   clearTray,
   createTrayState,
   DICE_CATALOG,
@@ -49,6 +50,109 @@ function setStatus(message) {
 function currentColors() { return { resin: $('resin-color').value, ink: $('ink-color').value }; }
 const STORAGE_KEY = 'dicey.saved-presets.v1';
 let savedPresets = [];
+const COLOR_COMBO_STORAGE_KEY = 'dicey.saved-color-combos.v1';
+let savedColorCombos = [];
+let colorComboSequence = 0;
+function loadSavedColorCombos() {
+  try {
+    savedColorCombos = normalizeSavedColorCombos(JSON.parse(localStorage.getItem(COLOR_COMBO_STORAGE_KEY) || '[]'));
+  } catch {
+    savedColorCombos = [];
+  }
+}
+function persistSavedColorCombos() {
+  try {
+    localStorage.setItem(COLOR_COMBO_STORAGE_KEY, JSON.stringify(savedColorCombos));
+  } catch {
+    announce('Browser storage is unavailable.');
+  }
+}
+function renderSavedColorCombos() {
+  const root = $('saved-color-combos');
+  root.replaceChildren();
+  if (!savedColorCombos.length) {
+    const empty = document.createElement('span');
+    empty.className = 'color-combo-empty';
+    empty.textContent = 'No saved colors';
+    root.append(empty);
+  }
+  for (const combo of savedColorCombos) {
+    const item = document.createElement('span');
+    item.className = 'saved-color-combo';
+
+    const apply = document.createElement('button');
+    apply.type = 'button';
+    apply.className = 'saved-color-combo-load';
+    apply.dataset.loadColorCombo = combo.id;
+    apply.disabled = isRolling;
+    apply.setAttribute('aria-label', 'Apply ' + combo.name + ' color combination');
+
+    const preview = document.createElement('span');
+    preview.className = 'color-combo-preview';
+    preview.setAttribute('aria-hidden', 'true');
+    const resinDot = document.createElement('i');
+    resinDot.style.setProperty('--combo-color', combo.resin);
+    const inkDot = document.createElement('i');
+    inkDot.style.setProperty('--combo-color', combo.ink);
+    preview.append(resinDot, inkDot);
+
+    const name = document.createElement('span');
+    name.className = 'saved-color-combo-name';
+    name.textContent = combo.name;
+    apply.append(preview, name);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'saved-color-combo-remove';
+    remove.dataset.removeColorCombo = combo.id;
+    remove.textContent = '×';
+    remove.disabled = isRolling;
+    remove.setAttribute('aria-label', 'Delete ' + combo.name + ' color combination');
+
+    item.append(apply, remove);
+    root.append(item);
+  }
+}
+function saveCurrentColorCombo() {
+  const input = $('save-color-combo-name');
+  const name = input.value.trim();
+  if (!name) {
+    input.setCustomValidity('Enter a color combination name.');
+    input.reportValidity();
+    return;
+  }
+  if (savedColorCombos.some((combo) => combo.name.toLowerCase() === name.toLowerCase())) {
+    input.setCustomValidity('That color combination name already exists.');
+    input.reportValidity();
+    return;
+  }
+  if (savedColorCombos.length >= MAX_SAVED_COLOR_COMBOS) {
+    announce('Maximum of ' + MAX_SAVED_COLOR_COMBOS + ' saved color combinations.');
+    return;
+  }
+
+  input.setCustomValidity('');
+  const id = 'colors-' + Date.now().toString(36) + '-' + (++colorComboSequence).toString(36);
+  const combo = createSavedColorCombo(name, currentColors(), id);
+  savedColorCombos = [combo, ...savedColorCombos];
+  persistSavedColorCombos();
+  renderSavedColorCombos();
+  $('save-color-combo-dialog').close();
+  input.value = '';
+  announce('Saved colors: ' + combo.name);
+}
+function loadCustomColorCombo(id) {
+  const combo = savedColorCombos.find((entry) => entry.id === id);
+  if (!combo || isRolling) return;
+  setColors(combo.resin, combo.ink);
+  announce('Applied colors: ' + combo.name);
+}
+function deleteCustomColorCombo(id) {
+  if (isRolling) return;
+  savedColorCombos = savedColorCombos.filter((combo) => combo.id !== id);
+  persistSavedColorCombos();
+  renderSavedColorCombos();
+}
 function loadSavedPresets() { try { savedPresets = normalizeSavedPresets(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')); } catch { savedPresets=[]; } }
 function persistSavedPresets() { try { localStorage.setItem(STORAGE_KEY,JSON.stringify(savedPresets)); } catch { announce('Browser storage is unavailable.'); } }
 function renderSavedPresets() {
@@ -186,7 +290,9 @@ function render() {
   $('roll-button').classList.toggle('is-rolling', isRolling);
   for (const button of $('preset-buttons').querySelectorAll('button')) button.disabled = isRolling;
   renderSavedPresets();
+  renderSavedColorCombos();
   $('save-preset').disabled=isRolling||totalDice===0||savedPresets.length>=MAX_SAVED_PRESETS;
+  $('save-color-combo').disabled=isRolling||savedColorCombos.length>=MAX_SAVED_COLOR_COMBOS;
   renderCountControls();
   renderResults();
   renderHistory();
@@ -335,6 +441,7 @@ function installOrbitControls() {
 async function boot() {
   try {
     loadSavedPresets();
+    loadSavedColorCombos();
     stage = await createStage(host, {
       view: createView(),
       backdrop: '#101814',
@@ -363,6 +470,27 @@ async function boot() {
     $('save-preset').addEventListener('click',()=>{if(isRolling||!state.dice.length)return;$('save-preset-name').value='';$('save-preset-name').setCustomValidity('');$('save-preset-dialog').showModal();$('save-preset-name').focus();});
     $('confirm-save-preset').addEventListener('click',saveCurrentPreset);
     $('save-preset-name').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveCurrentPreset();}});
+    $('saved-color-combos').addEventListener('click', (event) => {
+      const apply = event.target.closest('button[data-load-color-combo]');
+      const remove = event.target.closest('button[data-remove-color-combo]');
+      if (apply && !apply.disabled) loadCustomColorCombo(apply.dataset.loadColorCombo);
+      else if (remove && !remove.disabled) deleteCustomColorCombo(remove.dataset.removeColorCombo);
+    });
+    $('save-color-combo').addEventListener('click', () => {
+      if (isRolling || savedColorCombos.length >= MAX_SAVED_COLOR_COMBOS) return;
+      const input = $('save-color-combo-name');
+      input.value = '';
+      input.setCustomValidity('');
+      $('save-color-combo-dialog').showModal();
+      input.focus();
+    });
+    $('confirm-save-color-combo').addEventListener('click', saveCurrentColorCombo);
+    $('save-color-combo-name').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        saveCurrentColorCombo();
+      }
+    });
 
     $('clear-pool').addEventListener('click', () => {
       if (isRolling) return;
