@@ -33,3 +33,7 @@ Run the simulation and 3D world tests with:
 - Press Space or choose Roll Unheld to roll every die not currently kept.
 - Choose Keep under an individual result to set it aside.
 - Roll All releases and rerolls the entire pool.
+
+## Dice geometry
+
+Dicey uses the Madness Engine 3D dice meshes and face-reading pipeline for its virtual dice. The D4 relies on the engine's shared geometry and orientation fixes; keep the engine dependency current when updating dice rendering.
