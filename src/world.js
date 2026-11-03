@@ -207,7 +207,7 @@ export function createDiceWorld(
     let halfHeight = table?.halfDepth ?? 3;
     for (const die of dice) {
       halfWidth = Math.max(halfWidth, Math.abs(screenRight(die.baseX, die.baseZ)) + DIE_RADIUS);
-      halfHeight = Math.max(halfHeight, Math.abs(screenUp(die.baseX, DIE_BASE_Y - TARGET_Y, die.baseZ)) + DIE_RADIUS);
+      halfHeight = Math.max(halfHeight, Math.abs(screenUp(die.baseX, die.baseY - TARGET_Y, die.baseZ)) + DIE_RADIUS);
     }
     const safeAspect = Math.max(0.25, nextAspect);
     const fov = CAMERA_FOV * Math.max(1, Math.min(1.75, 0.8 / safeAspect));
