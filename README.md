@@ -1,8 +1,8 @@
 # Dicey — Five Alive
 
-A compact, playable D6 game built specifically to demo the standalone dice props introduced in Madness Engine PR [#41](https://github.com/h1ddenpr0cess20/madness-engine/pull/41).
+A small, playable 3D D6 game built to demonstrate the standalone dice props introduced in Madness Engine PR [#41](https://github.com/h1ddenpr0cess20/madness-engine/pull/41).
 
-**Game:** Five Alive is a push-your-luck race to 100. Roll all five dice. A throw without a one adds the face-value total to the turn pot. Any one busts the turn and clears the unbanked points. Bank a safe pot before risking another throw.
+**Five Alive** is a push-your-luck race to 100. Roll all five dice. A throw without a one adds the face-value total to the turn pot. Any one busts the turn and clears the unbanked points. Bank a safe pot before risking another throw.
 
 ## Run locally
 
@@ -13,15 +13,17 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. Use **Roll the dice** or press Space. Bank points to secure them. Start a new game to reset the scoreboard.
+Use **Roll Dice** or press Space. Bank points to secure them. Start a new game to reset the scoreboard.
 
-## D6 demo coverage
+## 3D D6 demo
 
-- Both engine D6 props are exercised: `d6` (numbered faces) and `d6-pips` (pip faces).
-- Resin and marking ink can be changed independently with the colour.
-- Five physical D6 prop groups animate together on the table.
-- Each result is read after the animation by transforming every source face normal through the die's final quaternion and selecting the face with the greatest world-up dot product. The score and face-reader UI are populated from that geometry read; there is no second, unrelated random score roll.
-- A settled face must be within 0.001 of world-up or the reader throws an error rather than silently reporting a value.
+- The stage is full-viewport: the dice are the focus, not a dashboard or split-pane layout.
+- The five-die table is centered on the stage. Landscape uses one row; narrow/portrait screens use a centered three-plus-two layout.
+- Both engine D6 prop styles are supported: `d6` (numbered faces) and `d6-pips` (pip faces).
+- Resin and marking ink can be changed independently.
+- All five props animate together. Results are read after settling by transforming each face normal through its final die and tumble quaternions and selecting the greatest world-up dot product.
+- The score and result strip use that geometry read. There is no unrelated second random score roll.
+- A settled top face must be within 0.001 of world-up or the reader throws an error rather than silently displaying a value.
 
 ## Engine pin
 
@@ -34,4 +36,4 @@ npm test
 npm run build
 ```
 
-The simulation tests cover the score rules and validation. The 3D face reader is exercised at runtime by every completed roll. A successful production build should be run in an environment able to fetch GitHub dependencies.
+The world tests cover both D6 variants, settled face reads, style/colour rebuilds, and the narrow-screen table arrangement. Run these commands in an environment able to fetch the pinned GitHub engine dependency.
