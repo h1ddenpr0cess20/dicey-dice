@@ -92,7 +92,11 @@ test('custom presets preserve dice counts and colors', () => {
   const preset = createSavedPreset('Friday table', state, { resin: '#6f5b9a', ink: '#f2e6ff' }, 'friday');
   assert.equal(preset.counts['d6-pips'], 4);
   assert.equal(preset.resin, '#6f5b9a');
-  assert.deepEqual(getDiceCounts(applySavedPreset(createTrayState(), preset).dice), getDiceCounts(state.dice));
+  assert.equal(preset.ink, '#f2e6ff');
+  const restored = normalizeSavedPresets([preset])[0];
+  assert.equal(restored.resin, '#6f5b9a');
+  assert.equal(restored.ink, '#f2e6ff');
+  assert.deepEqual(getDiceCounts(applySavedPreset(createTrayState(), restored).dice), getDiceCounts(state.dice));
 });
 test('custom color combos preserve named resin and marking colors', () => {
   const combo = createSavedColorCombo('Moonstone', { resin: '#6F5B9A', ink: '#F2E6FF' }, 'moonstone');
