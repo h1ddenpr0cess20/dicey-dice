@@ -3,7 +3,7 @@ import { createStage } from 'madness-engine/stage';
 import { defineView } from 'madness-engine/view';
 import './style.css';
 import {
-  applyPreset,
+  applyPreset as applyDicePreset,
   applyRoll,
   clearTray,
   createTrayState,
@@ -232,7 +232,7 @@ function applyPreset(id) {
 }
 
 function applyPresetState(id) {
-  return applyPreset(state, id);
+  return applyDicePreset(state, id);
 }
 
 function setColors(resin, ink) {

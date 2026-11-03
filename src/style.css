@@ -88,7 +88,7 @@ button { color: inherit; }
 .color-picker input { width: 29px; height: 27px; padding: 2px; border: 1px solid #d3e2d52b; border-radius: 4px; background: #111a15; cursor: pointer; }
 .color-picker input::-webkit-color-swatch-wrapper { padding: 0; }
 .color-picker input::-webkit-color-swatch { border: 0; border-radius: 2px; }
-.swatches { display: flex; gap: 6px; margin-top: 13px; }
+.swatches { display: flex; gap: 6px; margin-top: 0; }
 .swatch { width: 20px; height: 20px; padding: 0; border: 2px solid #28362d; border-radius: 50%; background: var(--swatch); cursor: pointer; }
 .swatch.selected { outline: 1px solid #d5e7da; outline-offset: 2px; }
 
@@ -139,7 +139,7 @@ button { color: inherit; }
   .section-heading > small { display: none; }
 }
 @media (max-width: 600px) {
-  :root { --dock-height: 390px; }
+  :root { --dock-height: 432px; }
   .topbar { top: max(12px,env(safe-area-inset-top)); left: 14px; right: 14px; }
   .brand { gap: 8px; }
   .brand-mark { width: 24px; height: 24px; }
@@ -164,7 +164,7 @@ button { color: inherit; }
   .tray-meta { flex-direction: column; justify-content: center; gap: 4px; }
   .tray-meta span { font-size: 7px; }
   .text-button { padding: 4px 5px; font-size: 6px; }
-  .dock-main { grid-template-columns: 1fr; grid-template-rows: 1fr 65px; gap: 7px; padding-top: 6px; }
+  .dock-main { grid-template-columns: 1fr; grid-template-rows: 1fr 43px 45px; gap: 5px; padding-top: 6px; }
   .pool-section { grid-column: 1; grid-row: 1; }
   .dice-controls { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; }
   .dice-type { min-height: 36px; padding: 3px 4px; display: grid; justify-items: center; gap: 2px; }
@@ -172,8 +172,8 @@ button { color: inherit; }
   .stepper { gap: 4px; }
   .stepper button { width: 18px; height: 18px; }
   .stepper b { min-width: 8px; font-size: 8px; }
-  .finish-section { grid-column: 1; grid-row: 2; display: none; }
-  .roll-section { grid-column: 1; grid-row: 2; display: grid; grid-template-columns: 1fr 1.4fr; align-items: center; gap: 7px; }
+  .finish-section { grid-column: 1; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .roll-section { grid-column: 1; grid-row: 3; display: grid; grid-template-columns: 1fr 1.4fr; align-items: center; gap: 7px; }
   .roll-options { margin: 0; justify-content: flex-start; }
   .roll-button { min-height: 42px; }
   .roll-caption { display: none; }
