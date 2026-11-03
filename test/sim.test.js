@@ -30,7 +30,7 @@ test('pool changes preserve existing results and enforce the global cap', () => 
   assert.equal(state.dice.length, MAX_DICE);
 });
 
-test('Yahtzee, Farkle, craps, D&D, percentile and poker presets map to useful pools', () => {
+test('Yahtzee, Farkle, craps, D&D, percentile and pip-dice presets map to useful pools', () => {
   const yahtzee = applyPreset(createTrayState(), 'yahtzee');
   assert.deepEqual(getDiceCounts(yahtzee.dice), { d4: 0, d6: 0, 'd6-pips': 5, d8: 0, d10: 0, d100: 0, d12: 0, d20: 0 });
   assert.equal(getDiceCounts(applyPreset(yahtzee, 'farkle').dice)['d6-pips'], 6);
