@@ -1,1 +1,67 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#11141c"><meta name="description" content="Five Alive — a five-die D6 demo built with Madness Engine."><title>Five Alive — Dicey</title></head><body><main id="app"><div id="game"></div><header><div class="brand"><b>◆ DICEY</b><small>MADNESS ENGINE DEMO</small></div><span>● ENGINE ONLINE　 /　 D6</span></header><section class="hero"><small>01 / THE TABLE IS YOURS</small><h1>FIVE <i>ALIVE.</i></h1><p>Five dice. One bad roll. Know when to walk away.</p></section><aside class="panel"><small>THE SCOREBOARD</small><h2>Make it count.</h2><div class="scores"><div><small>BANKED</small><strong id="banked-score">0</strong></div><div><small>ON THE TABLE</small><strong id="turn-score">0</strong></div></div><button id="roll-button">↗　ROLL THE DICE　→</button><button id="bank-button" disabled>↓　BANK YOUR POINTS</button><button id="new-game-button" class="quiet">↺ Start a new game</button><hr><small>YOUR DICE</small><h3>Make them yours.</h3><div class="switch"><button id="number-style" class="selected">Numbers</button><button id="pip-style">Pips</button></div><label>Resin <input id="resin-color" type="color" value="#b8d8d0"></label><label>Markings <input id="ink-color" type="color" value="#182a35"></label><hr><small>HOW TO PLAY</small><p>Roll all five dice. A throw without a one adds its total to your turn. Roll a one and lose your unbanked points. Bank before you bust.</p></aside><div class="status"><small>CURRENT THROW</small><p id="throw-status">Ready when you are.</p><div id="die-readings"><span>01　—</span><span>02　—</span><span>03　—</span><span>04　—</span><span>05　—</span></div></div><div id="loading">BUILDING THE TABLE…</div></main><script type="module" src="./src/main.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101814" />
+    <meta name="description" content="Five Alive — a rotatable 3D D6 game built with Madness Engine." />
+    <title>Five Alive — Dicey</title>
+  </head>
+  <body>
+    <main id="app">
+      <div id="game" aria-label="Interactive three-dimensional dice table. Drag to rotate, scroll or pinch to zoom."></div>
+      <div class="screen-vignette" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Dicey Five Alive">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span><strong>DICEY</strong><small>FIVE ALIVE</small></span>
+        </a>
+        <div class="engine-label"><span class="live-dot"></span> MADNESS ENGINE <b>·</b> D6 PROPS</div>
+      </header>
+
+      <section class="scoreboard" aria-label="Score">
+        <div class="score"><span>BANKED</span><strong id="banked-score">000</strong></div>
+        <div class="score-divider"></div>
+        <div class="score score-risk"><span>ON THE TABLE</span><strong id="turn-score">000</strong></div>
+        <div class="target-mark">FIRST TO <b>100</b></div>
+      </section>
+
+      <section class="lower-ui" aria-label="Game controls">
+        <div class="throw-info">
+          <div class="throw-message">
+            <span class="eyebrow">THE LAST THROW</span>
+            <strong id="throw-status" aria-live="polite">Five dice. Your move.</strong>
+          </div>
+          <div id="die-readings" class="die-readings" aria-label="Settled die face values">
+            <span class="reading"><small>01</small><b>—</b></span>
+            <span class="reading"><small>02</small><b>—</b></span>
+            <span class="reading"><small>03</small><b>—</b></span>
+            <span class="reading"><small>04</small><b>—</b></span>
+            <span class="reading"><small>05</small><b>—</b></span>
+          </div>
+        </div>
+        <div class="control-dock">
+          <div class="customize">
+            <div class="style-switch" role="group" aria-label="D6 marking style">
+              <button id="number-style" class="style-option selected" type="button" aria-pressed="true">01–06</button>
+              <button id="pip-style" class="style-option" type="button" aria-pressed="false">PIPS</button>
+            </div>
+            <label class="color-control" for="resin-color"><span>RESIN</span><input id="resin-color" type="color" value="#b8d8d0" aria-label="Dice resin colour" /></label>
+            <label class="color-control" for="ink-color"><span>INK</span><input id="ink-color" type="color" value="#182a35" aria-label="Dice marking colour" /></label>
+          </div>
+          <div class="action-group">
+            <button id="roll-button" class="action-primary" type="button"><span class="button-icon" aria-hidden="true">↻</span><span><b>ROLL DICE</b><small>SPACE</small></span></button>
+            <button id="bank-button" class="action-bank" type="button" disabled><b>BANK</b><small>SECURE POINTS</small></button>
+            <button id="new-game-button" class="action-reset" type="button" aria-label="Start a new game" title="Start a new game">↺</button>
+          </div>
+        </div>
+        <div class="microcopy"><span>DRAG TO ROTATE</span><i></i><span>SCROLL / PINCH TO ZOOM</span><i></i><span>DOUBLE-CLICK TO RESET</span></div>
+      </section>
+
+      <div id="loading" role="status"><span class="loading-mark">D</span><b>SETTING THE TABLE</b><small>BUILDING THE D6 PROPS</small></div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
