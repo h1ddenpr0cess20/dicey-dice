@@ -2,6 +2,14 @@
 
 Dicey is a browser-based 3D dice tray for tabletop games, roleplaying sessions, and custom dice pools. It combines a configurable polyhedral dice set with a physics-driven 3D tray, individual result controls, saved setups, and reusable color palettes.
 
+## Screenshots
+5d6 with default color scheme:
+<img width="1089" height="1279" alt="dicey-dice vercel app_" src="https://github.com/user-attachments/assets/087621c9-f246-4e8d-9d1c-3408bc4a5e3e" />
+A full set of dice for roleplaying, with custom colors:
+<img width="1089" height="1279" alt="dicey-dice vercel app_ (1)" src="https://github.com/user-attachments/assets/a4493919-644e-4f8f-9028-02c82742e1a9" />
+
+
+
 ## Contents
 
 - [Features](#features)
