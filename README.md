@@ -1,39 +1,34 @@
-# Dicey — Five Alive
+# Dicey — The Virtual Dice Tray
 
-A small, playable 3D D6 game built to demonstrate the standalone dice props introduced in Madness Engine PR [#41](https://github.com/h1ddenpr0cess20/madness-engine/pull/41).
+A browser-based 3D dice tray for tabletop nights, roleplaying games, classic dice games, and house rules. Built with Madness Engine.
 
-**Five Alive** is a push-your-luck race to 100. Roll all five dice. A throw without a one adds the face-value total to the turn pot. Any one busts the turn and clears the unbanked points. Bank a safe pot before risking another throw.
+## Features
 
-## Run locally
+- Full standard polyhedral dice set: D4, D6, pip D6, D8, D10, percentile D%, D12, and D20.
+- Build mixed pools of up to 24 dice, with up to 12 of any one type.
+- Quick setups for Yahtzee, Farkle, craps, D&D, percentile rolls, and poker dice.
+- Roll all dice or reroll only dice that are not kept.
+- Keep individual results between throws, or release all kept dice.
+- Custom resin and marking colours, with curated colour swatches.
+- Readable per-die results, totals, copyable result summaries, and the last ten throws.
+- Drag-to-orbit 3D stage, mouse-wheel zoom, touch pinch zoom, and double-click camera reset.
+- Responsive tray layout for desktop, tablet, and mobile.
 
-Requires Node.js 22.12 or newer.
+Dicey is a general-purpose dice tray. Presets configure useful dice pools; they do not impose game-specific scoring rules.
 
-```sh
-npm install
-npm run dev
-```
+## Development
 
-Use **Roll Dice** or press Space. Bank points to secure them. Start a new game to reset the scoreboard.
+The app uses the Madness Engine package and its createDieProp polyhedral dice. Install dependencies with the repository's package manager, then run the configured development script.
 
-## 3D D6 demo
+Run the simulation and 3D world tests with:
 
-- The stage is full-viewport: the dice are the focus, not a dashboard or split-pane layout.
-- The five-die table is centered on the stage. Landscape uses one row; narrow/portrait screens use a centered three-plus-two layout.
-- Both engine D6 prop styles are supported: `d6` (numbered faces) and `d6-pips` (pip faces).
-- Resin and marking ink can be changed independently.
-- All five props animate together. Results are read after settling by transforming each face normal through its final die and tumble quaternions and selecting the greatest world-up dot product.
-- The score and result strip use that geometry read. There is no unrelated second random score roll.
-- A settled top face must be within 0.001 of world-up or the reader throws an error rather than silently displaying a value.
+    npm test
 
-## Engine pin
+## Controls
 
-The dependency is pinned to Madness Engine merge commit [`d65c12844b6f83f697ef1895a1a2b56fe7474247`](https://github.com/h1ddenpr0cess20/madness-engine/commit/d65c12844b6f83f697ef1895a1a2b56fe7474247), which merged the RPG dice props in PR #41. The standalone D6 entrypoints are exported from `madness-engine/props/dice`.
-
-## Verify
-
-```sh
-npm test
-npm run build
-```
-
-The world tests cover both D6 variants, settled face reads, style/colour rebuilds, and the narrow-screen table arrangement. Run these commands in an environment able to fetch the pinned GitHub engine dependency.
+- Drag the stage to rotate the view.
+- Scroll or pinch to zoom.
+- Double-click the stage to reset the camera.
+- Press Space or choose Roll Unheld to roll every die not currently kept.
+- Choose Keep under an individual result to set it aside.
+- Roll All releases and rerolls the entire pool.

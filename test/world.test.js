@@ -11,67 +11,71 @@ function makeStage() {
     aim: { yaw: 0.04, pitch: 0.72, zoom: 1 },
     reset() { this.aim.yaw = 0.04; this.aim.pitch = 0.72; },
   };
-  return {
-    scene: new GFX.Scene(),
-    target: new GFX.Vector3(),
-    view,
-  };
+  return { scene: new GFX.Scene(), target: new GFX.Vector3(), view };
 }
 
-function finishRoll(world) {
-  for (let frame = 0; frame < 24; frame++) {
+function finish(world) {
+  for (let frame = 0; frame < 20; frame++) {
     const result = world.update(0.1);
     if (result) return result;
   }
-  assert.fail('The D6 throw did not settle within the expected animation window.');
+  assert.fail('Dice animation did not settle.');
 }
 
-test('five numbered D6 props settle and report their actual upper faces', () => {
-  const world = createDiceWorld(makeStage(), 'd6', { resin: '#b8d8d0', ink: '#182a35' });
-  assert.equal(world.dice.length, 5);
-  assert.ok(world.roll(() => 0.41));
-  assert.equal(world.roll(() => 0.2), false, 'an active throw cannot be interrupted');
-  const values = finishRoll(world);
-  assert.equal(values.length, 5);
-  assert.ok(values.every((value) => Number.isInteger(value) && value >= 1 && value <= 6));
-  assert.deepEqual(world.inspect(), values);
-});
-
-test('the pip D6 variant reports values from the same settled face geometry', () => {
-  const world = createDiceWorld(makeStage(), 'd6-pips', { resin: '#472d70', ink: '#f1d8a7' });
-  assert.ok(world.dice.every((die) => die.prop.type === 'd6-pips'));
-  assert.ok(world.roll(() => 0.73));
-  const values = finishRoll(world);
-  assert.equal(values.length, 5);
-  assert.ok(values.every((value) => Number.isInteger(value) && value >= 1 && value <= 6));
-});
-
-test('portrait layout centers the dice into a three-plus-two arrangement', () => {
+test('every standard engine die can be created, rolled and read from its top face', () => {
   const world = createDiceWorld(makeStage());
-  world.setLayout(0.45);
-  const positions = world.dice.map((die) => [die.baseX, die.baseZ]);
-  assert.deepEqual(positions, [[-2.45, -1.2], [0, -1.2], [2.45, -1.2], [-1.225, 1.2], [1.225, 1.2]]);
-  assert.ok(world.requiredZoom(0.45) > world.requiredZoom(1.6));
+  const types = ['d4', 'd6', 'd6-pips', 'd8', 'd10', 'd100', 'd12', 'd20'];
+  const specs = types.map((type, index) => ({ id: type + '-test', type, value: null, held: false }));
+  assert.equal(world.setDice(specs), true);
+  assert.equal(world.dice.length, types.length);
+  assert.equal(world.roll(specs.map((die) => die.id), () => 0.37), true);
+  const results = finish(world);
+  assert.equal(results.length, types.length);
+  for (const result of results) {
+    const die = specs.find((entry) => entry.id === result.id);
+    const actual = world.inspect().find((entry) => entry.id === result.id);
+    assert.equal(String(result.value), String(actual.value));
+    assert.ok(world.dice.find((entry) => entry.id === result.id).prop.faces.some((face) => String(face.number) === String(result.value)));
+  }
 });
 
-test('zoom framing responds to rotation and never asks for a clipped default frame', () => {
+test('held dice are left untouched while the remaining dice roll', () => {
+  const world = createDiceWorld(makeStage());
+  const specs = [
+    { id: 'kept', type: 'd6', value: 4, held: true },
+    { id: 'reroll', type: 'd20', value: 17, held: false },
+  ];
+  world.setDice(specs);
+  const before = world.inspect();
+  assert.equal(world.roll(['reroll'], () => 0.2), true);
+  const results = finish(world);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].id, 'reroll');
+  const after = world.inspect();
+  assert.equal(after.find((die) => die.id === 'kept').value, before.find((die) => die.id === 'kept').value);
+});
+
+test('portrait and landscape layouts reposition all dice and reframe the camera', () => {
   const stage = makeStage();
   const world = createDiceWorld(stage);
-  const initial = world.requiredZoom(1.4);
-  stage.view.aim.yaw = Math.PI / 4;
-  world.keepFramed();
-  assert.ok(stage.view.aim.zoom >= world.requiredZoom(1.4));
-  assert.ok(world.requiredZoom(1.4) > 0);
-  assert.ok(initial > 0);
+  const specs = Array.from({ length: 18 }, (_, index) => ({
+    id: 'd6-' + index, type: 'd6', value: null, held: false,
+  }));
+  world.setDice(specs);
+  world.setLayout(0.45);
+  const portrait = world.dice.map((die) => [die.baseX, die.baseZ]);
+  assert.equal(new Set(portrait.map((point) => point[0])).size, 3);
+  const portraitZoom = world.requiredZoom();
+  world.setLayout(1.8);
+  assert.ok(new Set(world.dice.map((die) => die.baseX)).size > 3);
+  assert.ok(portraitZoom > 0);
+  assert.ok(stage.view.aim.zoom >= world.requiredZoom());
 });
 
-test('appearance changes rebuild all five dice and rolling remains available', () => {
+test('dice finish and hold rings update without changing the result face', () => {
   const world = createDiceWorld(makeStage());
-  assert.equal(world.setAppearance('d6-pips', { resin: '#123456', ink: '#fedcba' }), true);
-  assert.ok(world.dice.every((die) => die.prop.type === 'd6-pips'));
-  assert.ok(world.dice.every((die) => die.prop.dieMat.color.getHexString() === '123456'));
-  assert.ok(world.roll(() => 0.27));
-  assert.equal(world.setAppearance('d6', { resin: '#ffffff', ink: '#000000' }), false);
-  const values = finishRoll(world);
-  assert.ok(values.every((value) => value >= 1 && value <= 6));
+  world.setDice([{ id: 'd20-1', type: 'd20', value: 20, held: false }]);
+  assert.equal(world.setHeld('d20-1', true), true);
+  assert.equal(world.inspect()[0].held, true);
+  assert.equal(world.inspect()[0].value, 20);
 });

@@ -4,62 +4,101 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#101814" />
-    <meta name="description" content="Five Alive — a rotatable 3D D6 game built with Madness Engine." />
-    <title>Five Alive — Dicey</title>
+    <meta name="description" content="Dicey — a virtual dice tray for tabletop, roleplaying, and classic dice games." />
+    <title>Dicey — Virtual Dice Tray</title>
   </head>
   <body>
     <main id="app">
-      <div id="game" aria-label="Interactive three-dimensional dice table. Drag to rotate, scroll or pinch to zoom."></div>
-      <div class="screen-vignette" aria-hidden="true"></div>
+      <div id="game" aria-label="3D dice tray. Drag to rotate, scroll or pinch to zoom."></div>
+      <div class="stage-shade" aria-hidden="true"></div>
 
       <header class="topbar">
-        <a class="brand" href="#" aria-label="Dicey Five Alive">
+        <a class="brand" href="#" aria-label="Dicey home">
           <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-          <span><strong>DICEY</strong><small>FIVE ALIVE</small></span>
+          <span><strong>DICEY</strong><small>THE VIRTUAL DICE TRAY</small></span>
         </a>
-        <div class="engine-label"><span class="live-dot"></span> MADNESS ENGINE <b>·</b> D6 PROPS</div>
+        <div class="stage-hint"><span class="live-dot"></span> DRAG TO ORBIT <b>·</b> WHEEL / PINCH TO ZOOM</div>
+        <div class="top-total"><span>IN YOUR TRAY</span><strong id="dice-count">05</strong></div>
       </header>
 
-      <section class="scoreboard" aria-label="Score">
-        <div class="score"><span>BANKED</span><strong id="banked-score">000</strong></div>
-        <div class="score-divider"></div>
-        <div class="score score-risk"><span>ON THE TABLE</span><strong id="turn-score">000</strong></div>
-        <div class="target-mark">FIRST TO <b>100</b></div>
+      <section class="stage-title" aria-label="Dicey introduction">
+        <span class="eyebrow">ROLL ANYTHING</span>
+        <h1>Your dice.<br /><em>Your rules.</em></h1>
+        <p>For tabletop nights, quick decisions, and every game in between.</p>
       </section>
 
-      <section class="lower-ui" aria-label="Game controls">
-        <div class="throw-info">
-          <div class="throw-message">
-            <span class="eyebrow">THE LAST THROW</span>
-            <strong id="throw-status" aria-live="polite">Five dice. Your move.</strong>
-          </div>
-          <div id="die-readings" class="die-readings" aria-label="Settled die face values">
-            <span class="reading"><small>01</small><b>—</b></span>
-            <span class="reading"><small>02</small><b>—</b></span>
-            <span class="reading"><small>03</small><b>—</b></span>
-            <span class="reading"><small>04</small><b>—</b></span>
-            <span class="reading"><small>05</small><b>—</b></span>
-          </div>
+      <section id="result-shelf" class="result-shelf" aria-label="Dice results">
+        <div class="result-shelf-head">
+          <div><span class="eyebrow">LATEST RESULTS</span><strong id="result-total">Ready to roll</strong></div>
+          <button id="copy-results" type="button" class="copy-button" disabled> COPY RESULTS </button>
         </div>
-        <div class="control-dock">
-          <div class="customize">
-            <div class="style-switch" role="group" aria-label="D6 marking style">
-              <button id="number-style" class="style-option selected" type="button" aria-pressed="true">01–06</button>
-              <button id="pip-style" class="style-option" type="button" aria-pressed="false">PIPS</button>
+        <div id="result-dice" class="result-dice">
+          <span class="empty-results">Your rolled dice will appear here.</span>
+        </div>
+      </section>
+
+      <section id="control-dock" class="control-dock" aria-label="Dice controls">
+        <div class="dock-top">
+          <div class="preset-area">
+            <span class="eyebrow">QUICK SETUPS</span>
+            <div id="preset-buttons" class="preset-buttons">
+              <button type="button" data-preset="yahtzee"><b>YAHTZEE</b><small>5 D6</small></button>
+              <button type="button" data-preset="farkle"><b>FARKLE</b><small>6 D6</small></button>
+              <button type="button" data-preset="craps"><b>CRAPS</b><small>2 D6</small></button>
+              <button type="button" data-preset="dnd"><b>D&amp;D SET</b><small>Polyhedral</small></button>
+              <button type="button" data-preset="percentile"><b>PERCENTILE</b><small>D10 + D%</small></button>
+              <button type="button" data-preset="poker"><b>POKER DICE</b><small>5 Pips</small></button>
             </div>
-            <label class="color-control" for="resin-color"><span>RESIN</span><input id="resin-color" type="color" value="#b8d8d0" aria-label="Dice resin colour" /></label>
-            <label class="color-control" for="ink-color"><span>INK</span><input id="ink-color" type="color" value="#182a35" aria-label="Dice marking colour" /></label>
           </div>
-          <div class="action-group">
-            <button id="roll-button" class="action-primary" type="button"><span class="button-icon" aria-hidden="true">↻</span><span><b>ROLL DICE</b><small>SPACE</small></span></button>
-            <button id="bank-button" class="action-bank" type="button" disabled><b>BANK</b><small>SECURE POINTS</small></button>
-            <button id="new-game-button" class="action-reset" type="button" aria-label="Start a new game" title="Start a new game">↺</button>
+          <div class="tray-meta">
+            <span id="pool-summary">5 dice selected</span>
+            <button id="clear-pool" class="text-button" type="button">CLEAR TRAY</button>
           </div>
         </div>
-        <div class="microcopy"><span>DRAG TO ROTATE</span><i></i><span>SCROLL / PINCH TO ZOOM</span><i></i><span>DOUBLE-CLICK TO RESET</span></div>
+
+        <div class="dock-main">
+          <section class="pool-section">
+            <div class="section-heading"><span class="eyebrow">BUILD YOUR POOL</span><small>UP TO 24 DICE · MIX ANY TYPES</small></div>
+            <div id="dice-controls" class="dice-controls"></div>
+          </section>
+
+          <section class="finish-section">
+            <div class="section-heading"><span class="eyebrow">MAKE THEM YOURS</span><small>TRAY-WIDE FINISH</small></div>
+            <div class="finish-controls">
+              <label class="color-picker" for="resin-color"><span>RESIN</span><input id="resin-color" type="color" value="#b8d8d0" /></label>
+              <label class="color-picker" for="ink-color"><span>MARKINGS</span><input id="ink-color" type="color" value="#182a35" /></label>
+            </div>
+            <div class="swatches" aria-label="Resin colour presets">
+              <button type="button" class="swatch selected" data-resin="#b8d8d0" data-ink="#182a35" style="--swatch:#b8d8d0" aria-label="Mint dice"></button>
+              <button type="button" class="swatch" data-resin="#6f5b9a" data-ink="#f2e6ff" style="--swatch:#6f5b9a" aria-label="Amethyst dice"></button>
+              <button type="button" class="swatch" data-resin="#a84e48" data-ink="#fff0d8" style="--swatch:#a84e48" aria-label="Ruby dice"></button>
+              <button type="button" class="swatch" data-resin="#315f91" data-ink="#e6f1ff" style="--swatch:#315f91" aria-label="Sapphire dice"></button>
+              <button type="button" class="swatch" data-resin="#bd9652" data-ink="#2a2115" style="--swatch:#bd9652" aria-label="Amber dice"></button>
+              <button type="button" class="swatch" data-resin="#e7e1d4" data-ink="#2a3032" style="--swatch:#e7e1d4" aria-label="Ivory dice"></button>
+            </div>
+          </section>
+
+          <section class="roll-section">
+            <div class="roll-options">
+              <button id="release-all" class="sub-action" type="button" disabled>RELEASE KEPT</button>
+              <button id="roll-all" class="sub-action" type="button" disabled>ROLL ALL</button>
+            </div>
+            <button id="roll-button" class="roll-button" type="button" disabled>
+              <span class="roll-icon" aria-hidden="true">↻</span>
+              <span><b>ROLL DICE</b><small>SPACE</small></span>
+              <span class="roll-count" id="roll-count">05</span>
+            </button>
+            <span class="roll-caption" id="roll-caption">Roll the whole tray</span>
+          </section>
+        </div>
+
+        <div class="dock-history">
+          <div class="history-title"><span class="eyebrow">ROLL HISTORY</span><small>LAST 10 THROWS</small></div>
+          <div id="history-list" class="history-list"><span class="history-empty">Nothing rolled yet.</span></div>
+        </div>
       </section>
 
-      <div id="loading" role="status"><span class="loading-mark">D</span><b>SETTING THE TABLE</b><small>BUILDING THE D6 PROPS</small></div>
+      <div id="loading" role="status"><span class="loading-mark">D</span><b>SETTING THE TABLE</b><small>PREPARING YOUR DICE</small></div>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
     <script type="module" src="./src/main.js"></script>

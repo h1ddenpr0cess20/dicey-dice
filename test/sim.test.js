@@ -1,59 +1,87 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { bankPoints, createGameState, DICE_COUNT, resolveRoll, TARGET_SCORE } from '../src/sim.js';
+import {
+  applyPreset, applyRoll, clearTray, createTrayState, diceToRoll,
+  DICE_CATALOG, formatDieValue, getDiceCounts, MAX_DICE,
+  setAllHeld, setDiceCount, setDieHeld,
+} from '../src/sim.js';
 
-test('a safe throw adds all five actual face values to the turn pot', () => {
-  const next = resolveRoll(createGameState(), [2, 3, 4, 5, 6]);
-  assert.equal(next.lastRollTotal, 20);
-  assert.equal(next.turnScore, 20);
-  assert.equal(next.bankedScore, 0);
-  assert.equal(next.lastOutcome, 'safe');
-  assert.equal(next.rollsTaken, 1);
+test('the default tray starts with five numbered D6', () => {
+  const state = createTrayState();
+  assert.equal(state.dice.length, 5);
+  assert.equal(getDiceCounts(state.dice).d6, 5);
 });
 
-test('a one busts the entire unbanked turn without touching banked points', () => {
-  const before = { ...createGameState(), bankedScore: 35, turnScore: 24 };
-  const next = resolveRoll(before, [6, 1, 4, 5, 3]);
-  assert.equal(next.bankedScore, 35);
-  assert.equal(next.turnScore, 0);
-  assert.equal(next.lastRollTotal, 19);
-  assert.equal(next.lastOutcome, 'bust');
+test('all standard RPG dice types have selectable pools', () => {
+  const state = DICE_CATALOG.reduce((current, entry) => setDiceCount(current, entry.id, 1), clearTray(createTrayState()));
+  assert.equal(state.dice.length, 8);
+  assert.deepEqual(new Set(state.dice.map((die) => die.type)), new Set(DICE_CATALOG.map((entry) => entry.id)));
 });
 
-test('multiple safe throws accumulate before banking', () => {
-  const first = resolveRoll(createGameState(), [2, 2, 3, 4, 5]);
-  const second = resolveRoll(first, [6, 4, 3, 2, 5]);
-  assert.equal(first.turnScore, 16);
-  assert.equal(second.turnScore, 36);
-  assert.equal(second.rollsTaken, 2);
+test('pool changes preserve existing results and enforce the global cap', () => {
+  let state = createTrayState({ d6: 2 });
+  state = applyRoll(state, state.dice.map((die, index) => ({ id: die.id, value: index + 2 })), 100);
+  const firstId = state.dice[0].id;
+  state = setDiceCount(state, 'd6', 4);
+  assert.equal(state.dice.length, 4);
+  assert.equal(state.dice[0].id, firstId);
+  assert.equal(state.dice[0].value, 2);
+  state = setDiceCount(state, 'd20', MAX_DICE);
+  assert.equal(state.dice.length, MAX_DICE);
 });
 
-test('banking moves the turn pot into the safe total and clears the pot', () => {
-  const rolled = resolveRoll(createGameState(), [2, 3, 4, 5, 6]);
-  const banked = bankPoints(rolled);
-  assert.equal(banked.bankedScore, 20);
-  assert.equal(banked.turnScore, 0);
-  assert.equal(banked.lastOutcome, 'banked');
-  assert.equal(banked.turnsCompleted, 1);
+test('Yahtzee, Farkle, craps, D&D, percentile and poker presets map to useful pools', () => {
+  const yahtzee = applyPreset(createTrayState(), 'yahtzee');
+  assert.deepEqual(getDiceCounts(yahtzee.dice), { d4: 0, d6: 5, 'd6-pips': 0, d8: 0, d10: 0, d100: 0, d12: 0, d20: 0 });
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'farkle').dice).d6, 6);
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'craps').dice).d6, 2);
+  assert.equal(applyPreset(yahtzee, 'dnd').dice.length, 7);
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'percentile').dice).d100, 1);
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'poker').dice)['d6-pips'], 5);
 });
 
-test('reaching or passing the target wins the game', () => {
-  const nearWin = { ...createGameState(), bankedScore: TARGET_SCORE - 14, turnScore: 14 };
-  const won = bankPoints(nearWin);
-  assert.equal(won.bankedScore, TARGET_SCORE);
-  assert.equal(won.won, true);
-  assert.equal(won.lastOutcome, 'won');
-  assert.equal(bankPoints(won), won, 'a completed game cannot bank again');
+test('kept dice are excluded from rerolls and released dice return to the pool', () => {
+  let state = createTrayState({ d6: 5 });
+  state = applyRoll(state, state.dice.map((die, index) => ({ id: die.id, value: index + 1 })));
+  state = setDieHeld(state, state.dice[1].id, true);
+  state = setDieHeld(state, state.dice[3].id, true);
+  assert.equal(diceToRoll(state).length, 3);
+  assert.equal(diceToRoll(state, 'all').length, 5);
+  const keptValue = state.dice[1].value;
+  const reroll = diceToRoll(state).map((id, index) => ({ id, value: index + 2 }));
+  state = applyRoll(state, reroll, 200);
+  assert.equal(state.dice[1].value, keptValue);
+  assert.equal(state.dice[1].held, true);
+  state = setAllHeld(state, false);
+  assert.equal(diceToRoll(state).length, 5);
 });
 
-test('banking an empty turn is a no-op', () => {
-  const state = createGameState();
-  assert.equal(bankPoints(state), state);
+test('percentile values retain two-digit display including 00', () => {
+  assert.equal(formatDieValue('d100', '00'), '00');
+  assert.equal(formatDieValue('d100', '70'), '70');
 });
 
-test('roll values must represent five valid six-sided dice', () => {
-  assert.throws(() => resolveRoll(createGameState(), [1, 2, 3, 4]), /exactly 5/);
-  assert.throws(() => resolveRoll(createGameState(), [1, 2, 3, 4, 7]), /from 1 to 6/);
-  assert.throws(() => resolveRoll(createGameState(), [1, 2, 3, 4, 2.5]), /integers/);
-  assert.equal(DICE_COUNT, 5);
+test('only valid faces can be committed and held dice cannot be rolled', () => {
+  const state = createTrayState({ d20: 1 });
+  assert.throws(() => applyRoll(state, [{ id: state.dice[0].id, value: 21 }]), /Invalid d20/);
+  const rolled = applyRoll(state, [{ id: state.dice[0].id, value: 20 }]);
+  const held = setDieHeld(rolled, state.dice[0].id, true);
+  assert.throws(() => applyRoll(held, [{ id: state.dice[0].id, value: 8 }]), /kept die/);
+});
+
+test('roll history keeps the latest ten results', () => {
+  let state = createTrayState({ d4: 1 });
+  for (let index = 0; index < 12; index++) {
+    state = applyRoll(state, [{ id: state.dice[0].id, value: (index % 4) + 1 }], index);
+  }
+  assert.equal(state.history.length, 10);
+  assert.equal(state.history[0].number, 12);
+  assert.equal(state.history.at(-1).number, 3);
+});
+
+test('clearing the tray removes the dice without retaining old history', () => {
+  const rolled = applyRoll(createTrayState(), [{ id: 'd6-1', value: 6 }]);
+  const cleared = clearTray(rolled);
+  assert.equal(cleared.dice.length, 0);
+  assert.equal(cleared.history.length, 0);
 });

@@ -2,7 +2,19 @@ import { createAudio } from 'madness-engine/audio';
 import { createStage } from 'madness-engine/stage';
 import { defineView } from 'madness-engine/view';
 import './style.css';
-import { bankPoints, createGameState, resolveRoll } from './sim.js';
+import {
+  applyPreset,
+  applyRoll,
+  clearTray,
+  createTrayState,
+  DICE_CATALOG,
+  diceToRoll,
+  formatDieValue,
+  getDiceCounts,
+  setAllHeld,
+  setDiceCount,
+  setDieHeld,
+} from './sim.js';
 import { createDiceWorld } from './world.js';
 
 const $ = (id) => document.getElementById(id);
@@ -10,199 +22,291 @@ const host = $('game');
 const loading = $('loading');
 const { createView } = defineView({
   home: { yaw: 0.04, pitch: 0.72, zoom: 1 },
-  limits: { pitch: [0.28, 1.38], zoom: [0.45, 3.8] },
+  limits: { pitch: [0.28, 1.38], zoom: [0.4, 4.2] },
 });
+const COLORS_DEFAULT = { resin: '#b8d8d0', ink: '#182a35' };
 
-let state = createGameState();
+let state = createTrayState();
 let world = null;
 let stage = null;
 let audio = null;
 let isRolling = false;
-let dieType = 'd6';
 let toastTimer = null;
+let lastResultText = '';
 
 function announce(message) {
   const toast = $('toast');
   toast.textContent = message;
   toast.classList.add('visible');
   window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => toast.classList.remove('visible'), 1800);
+  toastTimer = window.setTimeout(() => toast.classList.remove('visible'), 1900);
 }
 
 function setStatus(message) {
-  $('throw-status').textContent = message;
+  $('result-total').textContent = message;
 }
 
-function renderReadings(values = null) {
-  const container = $('die-readings');
-  container.replaceChildren();
-  for (let index = 0; index < 5; index++) {
-    const chip = document.createElement('span');
-    chip.className = 'reading' + (values?.[index] === 1 ? ' bust' : '');
-    const label = document.createElement('small');
-    label.textContent = String(index + 1).padStart(2, '0');
-    const value = document.createElement('b');
-    value.textContent = values ? String(values[index]) : '—';
-    chip.append(label, value);
-    container.append(chip);
+function currentColors() {
+  return { resin: $('resin-color').value, ink: $('ink-color').value };
+}
+
+function renderCountControls() {
+  const counts = getDiceCounts(state.dice);
+  const root = $('dice-controls');
+  root.replaceChildren();
+  for (const entry of DICE_CATALOG) {
+    const card = document.createElement('div');
+    card.className = 'dice-type';
+    const label = document.createElement('span');
+    label.className = 'dice-type-label';
+    label.textContent = entry.label;
+    const stepper = document.createElement('div');
+    stepper.className = 'stepper';
+    const minus = document.createElement('button');
+    minus.type = 'button';
+    minus.textContent = '−';
+    minus.setAttribute('aria-label', 'Remove one ' + entry.label);
+    minus.disabled = isRolling || counts[entry.id] === 0;
+    minus.dataset.changeType = entry.id;
+    minus.dataset.changeBy = '-1';
+    const count = document.createElement('b');
+    count.textContent = String(counts[entry.id]);
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.textContent = '+';
+    plus.setAttribute('aria-label', 'Add one ' + entry.label);
+    plus.disabled = isRolling || state.dice.length >= 24 || counts[entry.id] >= 12;
+    plus.dataset.changeType = entry.id;
+    plus.dataset.changeBy = '1';
+    stepper.append(minus, count, plus);
+    card.append(label, stepper);
+    root.append(card);
   }
+}
+
+function renderHistory() {
+  const root = $('history-list');
+  root.replaceChildren();
+  if (!state.history.length) {
+    const empty = document.createElement('span');
+    empty.className = 'history-empty';
+    empty.textContent = 'Nothing rolled yet.';
+    root.append(empty);
+    return;
+  }
+  for (const roll of state.history) {
+    const item = document.createElement('span');
+    item.className = 'history-item';
+    const number = document.createElement('b');
+    number.textContent = '#' + roll.number;
+    const text = document.createElement('span');
+    text.textContent = roll.dice.map((die) =>
+      DICE_CATALOG.find((entry) => entry.id === die.type).label.replace(' PIPS', '') +
+      ' ' + formatDieValue(die.type, die.value) + (die.held ? '•' : ''),
+    ).join('  /  ');
+    item.append(number, text);
+    root.append(item);
+  }
+}
+
+function renderResults() {
+  const root = $('result-dice');
+  root.replaceChildren();
+  const rolled = state.dice.filter((die) => die.value !== null);
+  if (!rolled.length) {
+    const empty = document.createElement('span');
+    empty.className = 'empty-results';
+    empty.textContent = state.dice.length ? 'Roll the tray to see your results. Keep dice to save them for the next throw.' : 'Add dice to your tray to get started.';
+    root.append(empty);
+    $('copy-results').disabled = true;
+    lastResultText = '';
+    return;
+  }
+
+  for (const die of state.dice) {
+    const chip = document.createElement('div');
+    chip.className = 'result-chip' + (die.held ? ' is-held' : '');
+    const type = document.createElement('small');
+    type.textContent = DICE_CATALOG.find((entry) => entry.id === die.type).label;
+    const value = document.createElement('b');
+    value.textContent = formatDieValue(die.type, die.value);
+    const keep = document.createElement('button');
+    keep.type = 'button';
+    keep.className = 'keep-button';
+    keep.textContent = die.held ? 'KEPT ✓' : 'KEEP';
+    keep.disabled = isRolling || die.value === null;
+    keep.setAttribute('aria-pressed', String(die.held));
+    keep.setAttribute('aria-label', (die.held ? 'Release ' : 'Keep ') + type.textContent + ' ' + value.textContent);
+    keep.addEventListener('click', () => toggleHeld(die.id));
+    chip.append(type, value, keep);
+    root.append(chip);
+  }
+
+  const total = rolled.reduce((sum, die) => sum + Number(die.value), 0);
+  $('copy-results').disabled = false;
+  $('result-total').textContent = rolled.length + ' dice · total ' + total;
+  lastResultText = rolled.map((die) => {
+    const label = DICE_CATALOG.find((entry) => entry.id === die.type).label;
+    return label + ': ' + formatDieValue(die.type, die.value) + (die.held ? ' (kept)' : '');
+  }).join(' | ') + ' | Total: ' + total;
 }
 
 function render() {
-  $('banked-score').textContent = String(state.bankedScore).padStart(3, '0');
-  $('turn-score').textContent = String(state.turnScore).padStart(3, '0');
-  $('roll-button').disabled = isRolling || state.won;
-  $('bank-button').disabled = isRolling || state.turnScore <= 0 || state.won;
-  $('number-style').disabled = isRolling;
-  $('pip-style').disabled = isRolling;
-  $('resin-color').disabled = isRolling;
-  $('ink-color').disabled = isRolling;
-  $('roll-button').classList.toggle('rolling', isRolling);
+  const totalDice = state.dice.length;
+  const unheld = diceToRoll(state).length;
+  $('dice-count').textContent = String(totalDice).padStart(2, '0');
+  $('pool-summary').textContent = totalDice + (totalDice === 1 ? ' die selected' : ' dice selected');
+  $('roll-count').textContent = String(unheld).padStart(2, '0');
+  $('roll-button').disabled = isRolling || unheld === 0;
+  $('roll-all').disabled = isRolling || totalDice === 0;
+  $('release-all').disabled = isRolling || !state.dice.some((die) => die.held);
+  $('clear-pool').disabled = isRolling || totalDice === 0;
+  $('roll-button').querySelector('b').textContent = isRolling ? 'ROLLING…' : 'ROLL UNHELD';
+  $('roll-caption').textContent = unheld === totalDice ? 'Roll the whole tray' : unheld === 0 ? 'All dice are kept' : unheld + ' dice will roll · ' + (totalDice - unheld) + ' kept';
+  $('roll-button').classList.toggle('is-rolling', isRolling);
+  for (const button of $('preset-buttons').querySelectorAll('button')) button.disabled = isRolling;
+  renderCountControls();
+  renderResults();
+  renderHistory();
 }
 
-function syncStyleButtons() {
-  const numbered = dieType === 'd6';
-  $('number-style').classList.toggle('selected', numbered);
-  $('number-style').setAttribute('aria-pressed', String(numbered));
-  $('pip-style').classList.toggle('selected', !numbered);
-  $('pip-style').setAttribute('aria-pressed', String(!numbered));
+function syncWorld() {
+  if (!world || isRolling) return;
+  world.setDice(state.dice, currentColors());
 }
 
-function changeAppearance() {
-  if (isRolling || !world) return;
-  const colors = { resin: $('resin-color').value, ink: $('ink-color').value };
-  if (!world.setAppearance(dieType, colors)) return;
-  syncStyleButtons();
-  renderReadings();
-  setStatus(dieType === 'd6' ? 'Numbered D6 props ready.' : 'Pip-marked D6 props ready.');
-  announce('Five dice rebuilt with the selected finish.');
+function toggleHeld(id) {
+  if (isRolling) return;
+  const die = state.dice.find((entry) => entry.id === id);
+  if (!die || die.value === null) return;
+  state = setDieHeld(state, id, !die.held);
+  world?.setHeld(id, !die.held);
+  render();
 }
 
-function startRoll() {
-  if (!world || isRolling || state.won || !world.roll()) return;
+function changeCount(type, delta) {
+  if (isRolling) return;
+  state = setDiceCount(state, type, (getDiceCounts(state.dice)[type] ?? 0) + delta);
+  syncWorld();
+  render();
+}
+
+function startRoll(mode = 'unheld') {
+  if (!world || isRolling) return;
+  const ids = diceToRoll(state, mode);
+  if (!ids.length) {
+    announce('All dice are kept. Release some dice before rolling.');
+    return;
+  }
+  if (!world.roll(ids)) return;
   isRolling = true;
   audio?.wake();
-  setStatus('Rolling. Reading each settled upper face…');
+  setStatus('Dice tumbling…');
   render();
 }
 
-function bankTurn() {
-  if (isRolling || state.turnScore <= 0 || state.won) return;
-  state = bankPoints(state);
-  if (state.won) {
-    setStatus('A century. You called it perfectly.');
-    announce('100 points banked. Five Alive!');
-    audio?.jingle?.([72, 76, 79, 84], { length: 0.18, gain: 0.18 });
-  } else {
-    setStatus('Points locked. The next throw is yours.');
-    announce('Points banked safely.');
-    audio?.tone?.({ freq: 540, to: 760, length: 0.16, gain: 0.13 });
-  }
-  render();
+function rollAll() {
+  if (isRolling || !state.dice.length) return;
+  state = setAllHeld(state, false);
+  for (const die of state.dice) world?.setHeld(die.id, false);
+  startRoll('all');
 }
 
-function newGame() {
-  if (isRolling) return;
-  state = createGameState();
-  renderReadings();
-  setStatus('Fresh table. Five dice. Your move.');
-  render();
-  announce('New game started.');
-}
-
-function finishThrow(values) {
+function onThrowFinished(results) {
   isRolling = false;
-  const atRisk = state.turnScore;
-  state = resolveRoll(state, values);
-  renderReadings(values);
-
-  if (state.lastOutcome === 'bust') {
-    setStatus(atRisk > 0
-      ? 'BUST — a one wiped out ' + atRisk + ' unbanked points.'
-      : 'BUST — a one. No points this turn.');
-    audio?.burst?.({ length: 0.24, freq: 190, sweep: 68, gain: 0.28 });
-    announce('A one. Turn score lost.');
-  } else {
-    setStatus('Safe throw — ' + state.lastRollTotal + ' added. Bank it or risk another roll.');
-    audio?.tone?.({ freq: 330, to: 620, length: 0.2, gain: 0.14 });
-  }
+  state = applyRoll(state, results);
+  const count = results.length;
+  const total = results.reduce((sum, entry) => sum + Number(entry.value), 0);
+  setStatus(count + (count === 1 ? ' die rolled' : ' dice rolled') + ' · ' + total + ' points showing');
+  audio?.tone?.({ freq: 340, to: 630, length: 0.19, gain: 0.13 });
+  announce('Roll ' + state.rollCount + ' complete.');
   render();
+}
+
+function applyPreset(id) {
+  if (isRolling) return;
+  state = applyPresetState(id);
+  syncWorld();
+  render();
+  announce('Dice set: ' + id.toUpperCase());
+}
+
+function applyPresetState(id) {
+  return applyPreset(state, id);
+}
+
+function setColors(resin, ink) {
+  if (isRolling) return;
+  $('resin-color').value = resin;
+  $('ink-color').value = ink;
+  for (const button of document.querySelectorAll('.swatch')) {
+    button.classList.toggle('selected', button.dataset.resin === resin && button.dataset.ink === ink);
+  }
+  syncWorld();
+  render();
+  announce('Dice finish updated.');
 }
 
 function installOrbitControls() {
-  const activePointers = new Map();
-  let lastPinchDistance = 0;
-  let lastSinglePointer = null;
+  const pointers = new Map();
+  let pinchDistance = 0;
+  let previousSingle = null;
 
-  const isUiTarget = (target) => Boolean(
-    target instanceof Element && target.closest('button, input, label, a, .scoreboard, .topbar'),
+  const onUI = (target) => Boolean(
+    target instanceof Element && target.closest('button,input,label,a,.control-dock,.result-shelf,.topbar'),
   );
 
   host.addEventListener('pointerdown', (event) => {
-    if (isUiTarget(event.target)) return;
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (onUI(event.target) || (event.pointerType === 'mouse' && event.button !== 0)) return;
     event.preventDefault();
     host.setPointerCapture?.(event.pointerId);
-    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (activePointers.size === 1) {
-      lastSinglePointer = { x: event.clientX, y: event.clientY };
-    } else if (activePointers.size === 2) {
-      const [a, b] = [...activePointers.values()];
-      lastPinchDistance = Math.hypot(a.x - b.x, a.y - b.y);
-      lastSinglePointer = null;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 1) previousSingle = { x: event.clientX, y: event.clientY };
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchDistance = Math.hypot(a.x - b.x, a.y - b.y);
+      previousSingle = null;
     }
     host.classList.add('dragging');
   });
 
   host.addEventListener('pointermove', (event) => {
-    if (!activePointers.has(event.pointerId) || !stage || !world) return;
-    event.preventDefault();
-    const previous = activePointers.get(event.pointerId);
-    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (activePointers.size >= 2) {
-      const [a, b] = [...activePointers.values()];
+    if (!pointers.has(event.pointerId) || !stage) return;
+    const previous = pointers.get(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
-      if (lastPinchDistance > 0 && distance > 0) {
-        world.zoomBy(lastPinchDistance / distance);
-      }
-      lastPinchDistance = distance;
-      lastSinglePointer = null;
+      if (pinchDistance > 0 && distance > 0) world.zoomBy(pinchDistance / distance);
+      pinchDistance = distance;
+      previousSingle = null;
       return;
     }
-
-    if (lastSinglePointer) {
-      const dx = event.clientX - previous.x;
-      const dy = event.clientY - previous.y;
-      stage.view.turn(-dx * 0.006, dy * 0.0045);
-      world.keepFramed();
-    }
-    lastSinglePointer = { x: event.clientX, y: event.clientY };
+    const dx = event.clientX - previous.x;
+    const dy = event.clientY - previous.y;
+    stage.view.turn(-dx * 0.006, dy * 0.0045);
+    world.keepFramed();
+    previousSingle = { x: event.clientX, y: event.clientY };
   });
 
   const endPointer = (event) => {
-    activePointers.delete(event.pointerId);
-    if (activePointers.size < 2) lastPinchDistance = 0;
-    lastSinglePointer = activePointers.size === 1
-      ? [...activePointers.values()][0]
-      : null;
-    if (activePointers.size === 0) host.classList.remove('dragging');
+    pointers.delete(event.pointerId);
+    if (pointers.size < 2) pinchDistance = 0;
+    previousSingle = pointers.size === 1 ? [...pointers.values()][0] : null;
+    if (!pointers.size) host.classList.remove('dragging');
   };
   host.addEventListener('pointerup', endPointer);
   host.addEventListener('pointercancel', endPointer);
   host.addEventListener('lostpointercapture', endPointer);
 
   host.addEventListener('wheel', (event) => {
-    if (!world || isUiTarget(event.target)) return;
+    if (onUI(event.target)) return;
     event.preventDefault();
     world.zoomBy(Math.exp(event.deltaY * 0.001));
   }, { passive: false });
 
   host.addEventListener('dblclick', (event) => {
-    if (!world || isUiTarget(event.target)) return;
-    event.preventDefault();
-    world.resetView();
+    if (!onUI(event.target)) world.resetView();
   });
 }
 
@@ -211,7 +315,7 @@ async function boot() {
     stage = await createStage(host, {
       view: createView(),
       backdrop: '#101814',
-      label: 'dicey-five-alive',
+      label: 'dicey-virtual-tray',
       lens: { distance: 11, fov: 35 },
       shadows: true,
       shadowSize: 1536,
@@ -221,35 +325,51 @@ async function boot() {
         fill: { color: '#81c8b0', intensity: 0.62, offset: [5, 5, -4] },
       },
     });
-
-    world = createDiceWorld(stage, dieType, {
-      resin: $('resin-color').value,
-      ink: $('ink-color').value,
-    });
-    world.setLayout(host.clientWidth / Math.max(1, host.clientHeight));
+    world = createDiceWorld(stage, COLORS_DEFAULT);
+    world.setDice(state.dice, COLORS_DEFAULT);
     audio = createAudio({ storageKey: 'dicey.muted', glue: true });
 
-    $('roll-button').addEventListener('click', startRoll);
-    $('bank-button').addEventListener('click', bankTurn);
-    $('new-game-button').addEventListener('click', newGame);
-    $('number-style').addEventListener('click', () => {
-      if (isRolling || dieType === 'd6') return;
-      dieType = 'd6';
-      changeAppearance();
+    $('dice-controls').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-change-type]');
+      if (button && !button.disabled) changeCount(button.dataset.changeType, Number(button.dataset.changeBy));
     });
-    $('pip-style').addEventListener('click', () => {
-      if (isRolling || dieType === 'd6-pips') return;
-      dieType = 'd6-pips';
-      changeAppearance();
+    $('preset-buttons').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-preset]');
+      if (button && !button.disabled) applyPreset(button.dataset.preset);
     });
-    $('resin-color').addEventListener('change', changeAppearance);
-    $('ink-color').addEventListener('change', changeAppearance);
+    $('clear-pool').addEventListener('click', () => {
+      if (isRolling) return;
+      state = clearTray(state);
+      syncWorld();
+      render();
+    });
+    $('roll-button').addEventListener('click', () => startRoll('unheld'));
+    $('roll-all').addEventListener('click', rollAll);
+    $('release-all').addEventListener('click', () => {
+      state = setAllHeld(state, false);
+      for (const die of state.dice) world.setHeld(die.id, false);
+      render();
+    });
+    $('copy-results').addEventListener('click', async () => {
+      if (!lastResultText) return;
+      try {
+        await navigator.clipboard.writeText(lastResultText);
+        announce('Results copied.');
+      } catch {
+        announce('Clipboard access is unavailable in this browser.');
+      }
+    });
+    $('resin-color').addEventListener('change', () => setColors($('resin-color').value, $('ink-color').value));
+    $('ink-color').addEventListener('change', () => setColors($('resin-color').value, $('ink-color').value));
+    document.querySelectorAll('.swatch').forEach((button) => {
+      button.addEventListener('click', () => setColors(button.dataset.resin, button.dataset.ink));
+    });
 
     window.addEventListener('keydown', (event) => {
       if (event.code !== 'Space' || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.target instanceof HTMLElement && event.target.closest('button, input, select, textarea')) return;
+      if (event.target instanceof HTMLElement && event.target.closest('button,input,select,textarea')) return;
       event.preventDefault();
-      startRoll();
+      startRoll('unheld');
     });
 
     installOrbitControls();
@@ -260,18 +380,17 @@ async function boot() {
 
     stage.run((dt) => {
       stage.view.step(dt);
-      const values = world.update(dt);
-      if (values) finishThrow(values);
+      const results = world.update(dt);
+      if (results) onThrowFinished(results);
     });
 
     loading.classList.add('loaded');
     window.setTimeout(() => loading.remove(), 420);
     render();
-    setStatus('Drag the table to orbit. Roll when ready.');
+    setStatus('Ready to roll');
   } catch (error) {
-    console.error('Dicey could not start:', error);
-    loading.innerHTML = '<b>THE TABLE DID NOT LOAD</b><small>' +
-      String(error?.message ?? error) + '</small>';
+    console.error('Dicey failed to start:', error);
+    loading.innerHTML = '<b>THE TRAY DID NOT LOAD</b><small>' + String(error?.message ?? error) + '</small>';
   }
 }
 
