@@ -63,8 +63,9 @@ function loadSavedColorCombos() {
 function persistSavedColorCombos() {
   try {
     localStorage.setItem(COLOR_COMBO_STORAGE_KEY, JSON.stringify(savedColorCombos));
+    return true;
   } catch {
-    announce('Browser storage is unavailable.');
+    return false;
   }
 }
 function renderSavedColorCombos() {
@@ -112,6 +113,7 @@ function renderSavedColorCombos() {
     item.append(apply, remove);
     root.append(item);
   }
+  $('save-color-combo').disabled = isRolling || savedColorCombos.length >= MAX_SAVED_COLOR_COMBOS;
 }
 function saveCurrentColorCombo() {
   const input = $('save-color-combo-name');
@@ -135,11 +137,13 @@ function saveCurrentColorCombo() {
   const id = 'colors-' + Date.now().toString(36) + '-' + (++colorComboSequence).toString(36);
   const combo = createSavedColorCombo(name, currentColors(), id);
   savedColorCombos = [combo, ...savedColorCombos];
-  persistSavedColorCombos();
+  const persisted = persistSavedColorCombos();
   renderSavedColorCombos();
   $('save-color-combo-dialog').close();
   input.value = '';
-  announce('Saved colors: ' + combo.name);
+  announce(persisted
+    ? 'Saved colors: ' + combo.name
+    : 'Saved for this session only; browser storage is unavailable.');
 }
 function loadCustomColorCombo(id) {
   const combo = savedColorCombos.find((entry) => entry.id === id);
@@ -150,8 +154,9 @@ function loadCustomColorCombo(id) {
 function deleteCustomColorCombo(id) {
   if (isRolling) return;
   savedColorCombos = savedColorCombos.filter((combo) => combo.id !== id);
-  persistSavedColorCombos();
+  const persisted = persistSavedColorCombos();
   renderSavedColorCombos();
+  if (!persisted) announce('Deleted for this session only; browser storage is unavailable.');
 }
 function loadSavedPresets() { try { savedPresets = normalizeSavedPresets(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')); } catch { savedPresets=[]; } }
 function persistSavedPresets() { try { localStorage.setItem(STORAGE_KEY,JSON.stringify(savedPresets)); } catch { announce('Browser storage is unavailable.'); } }
@@ -292,7 +297,6 @@ function render() {
   renderSavedPresets();
   renderSavedColorCombos();
   $('save-preset').disabled=isRolling||totalDice===0||savedPresets.length>=MAX_SAVED_PRESETS;
-  $('save-color-combo').disabled=isRolling||savedColorCombos.length>=MAX_SAVED_COLOR_COMBOS;
   renderCountControls();
   renderResults();
   renderHistory();
