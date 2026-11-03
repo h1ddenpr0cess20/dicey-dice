@@ -168,6 +168,42 @@ export function formatResults(dice) {
 }
 
 
+export const MAX_SAVED_COLOR_COMBOS = 12;
+
+export function createSavedColorCombo(name, colors, id = 'colors-' + Date.now().toString(36)) {
+  const clean = String(name ?? '').trim().replace(/\s+/g, ' ');
+  if (!clean) throw new TypeError('Enter a name for this color combo.');
+  if (clean.length > 24) throw new RangeError('Color combo names must be 24 characters or fewer.');
+  const safeHex = (value) => typeof value === 'string' && HEX_COLOR.test(value) ? value.toLowerCase() : null;
+  const resin = safeHex(colors?.resin);
+  const ink = safeHex(colors?.ink);
+  if (!resin || !ink) throw new TypeError('Choose valid resin and marking colors before saving.');
+  const safeId = String(id ?? '').slice(0, 64);
+  if (!safeId) throw new TypeError('A color combo ID is required.');
+  return { id: safeId, name: clean, resin, ink };
+}
+
+export function normalizeSavedColorCombos(value) {
+  if (!Array.isArray(value)) return [];
+  const result = [];
+  const seenIds = new Set();
+  const seenNames = new Set();
+  for (const combo of value) {
+    if (!combo || typeof combo !== 'object') continue;
+    const id = typeof combo.id === 'string' ? combo.id.trim().slice(0, 64) : '';
+    const name = typeof combo.name === 'string' ? combo.name.trim().replace(/\s+/g, ' ').slice(0, 24) : '';
+    const nameKey = name.toLowerCase();
+    const resin = typeof combo.resin === 'string' && HEX_COLOR.test(combo.resin) ? combo.resin.toLowerCase() : null;
+    const ink = typeof combo.ink === 'string' && HEX_COLOR.test(combo.ink) ? combo.ink.toLowerCase() : null;
+    if (!id || !name || !resin || !ink || seenIds.has(id) || seenNames.has(nameKey)) continue;
+    result.push({ id, name, resin, ink });
+    seenIds.add(id);
+    seenNames.add(nameKey);
+    if (result.length === MAX_SAVED_COLOR_COMBOS) break;
+  }
+  return result;
+}
+
 export const MAX_SAVED_PRESETS = 12;
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 export function createSavedPreset(name, state, colors, id = 'custom-' + Date.now().toString(36)) {
