@@ -105,7 +105,8 @@ button { color: inherit; }
 .roll-count { font: 700 16px 'DM Mono',monospace; }
 .roll-caption { color: #829587; font: 7px 'DM Mono',monospace; text-align: right; }
 
-.dock-history { display: flex; align-items: center; gap: 14px; min-width: 0; padding-top: 6px; border-top: 1px solid rgba(199,220,204,.1); }
+/* Keep the history row mounted at a stable height before and after the first roll. */
+.dock-history { display: flex; align-items: center; gap: 14px; width: 100%; height: 30px; min-height: 30px; overflow: hidden; padding-top: 6px; border-top: 1px solid rgba(199,220,204,.1); }
 .history-title { display: flex; align-items: baseline; gap: 7px; white-space: nowrap; }
 .history-list { display: flex; align-items: center; gap: 7px; min-width: 0; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #476354 transparent; }
 .history-empty { color: #718679; font-size: 8px; }
@@ -177,7 +178,7 @@ button { color: inherit; }
   .roll-options { margin: 0; justify-content: flex-start; }
   .roll-button { min-height: 42px; }
   .roll-caption { display: none; }
-  .dock-history { gap: 8px; padding-top: 4px; min-height: 25px; }
+  .dock-history { gap: 8px; padding-top: 4px; }
   .history-title { flex-direction: column; gap: 1px; }
   .history-title .eyebrow { font-size: 7px; }
   .history-title > small { font-size: 6px; }
