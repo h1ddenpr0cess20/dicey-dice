@@ -1,0 +1,19 @@
+{
+  "name": "dicey",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A Madness Engine D6 demo: five dice, one risky decision, first to 100.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "madness-engine": "github:h1ddenpr0cess20/madness-engine#d65c12844b6f83f697ef1895a1a2b56fe7474247"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0"
+  }
+}
