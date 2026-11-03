@@ -4,6 +4,7 @@ import {
   applyPreset, applyRoll, clearTray, createTrayState, diceToRoll,
   DICE_CATALOG, formatDieValue, getDiceCounts, MAX_DICE,
   setAllHeld, setDiceCount, setDieHeld,
+  createSavedPreset, normalizeSavedPresets, applySavedPreset, MAX_SAVED_PRESETS,
 } from '../src/sim.js';
 
 test('the default tray starts with five pip-marked D6', () => {
@@ -83,4 +84,23 @@ test('clearing the tray removes the dice without retaining old history', () => {
   const cleared = clearTray(rolled);
   assert.equal(cleared.dice.length, 0);
   assert.equal(cleared.history.length, 0);
+});
+
+test('custom presets preserve dice counts and colors', () => {
+  const state = createTrayState({ 'd6-pips': 4, d20: 1 });
+  const preset = createSavedPreset('Friday table', state, { resin: '#6f5b9a', ink: '#f2e6ff' }, 'friday');
+  assert.equal(preset.counts['d6-pips'], 4);
+  assert.equal(preset.resin, '#6f5b9a');
+  assert.deepEqual(getDiceCounts(applySavedPreset(createTrayState(), preset).dice), getDiceCounts(state.dice));
+});
+test('custom presets reject blank names and empty trays', () => {
+  assert.throws(() => createSavedPreset(' ', createTrayState(), {}), /name/);
+  assert.throws(() => createSavedPreset('Empty', clearTray(createTrayState()), {}), /at least one die/);
+});
+test('saved presets are sanitized, deduplicated and capped', () => {
+  const valid = createSavedPreset('Valid', createTrayState({ d20: 1 }), {}, 'saved-1');
+  const list = normalizeSavedPresets([valid, valid, {id:'empty',name:'Empty',counts:{}}, ...Array.from({length:MAX_SAVED_PRESETS+2},(_,i)=>createSavedPreset('Pool '+i,createTrayState({d6:i+1}),{},'id-'+i))]);
+  assert.ok(list.length <= MAX_SAVED_PRESETS);
+  assert.equal(list[0].id, 'saved-1');
+  assert.equal(list.some(p => p.id === 'empty'), false);
 });

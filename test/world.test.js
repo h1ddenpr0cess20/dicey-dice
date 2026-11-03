@@ -72,12 +72,14 @@ test('portrait and landscape layouts reposition all dice and reframe the camera'
   assert.ok(stage.view.aim.zoom >= world.requiredZoom());
 });
 
-test('dice finish and hold rings update without changing the result face', () => {
+test('held state updates without decorative rings beneath dice', () => {
   const world = createDiceWorld(makeStage());
   world.setDice([{ id: 'd20-1', type: 'd20', value: 20, held: false }]);
   assert.equal(world.setHeld('d20-1', true), true);
   assert.equal(world.inspect()[0].held, true);
   assert.equal(world.inspect()[0].value, 20);
+  assert.equal(world.dice[0].ring, undefined);
+  assert.equal(world.dice[0].anchor.children.length, 1);
 });
 
 test('D4 lands flat on a triangular base instead of balancing on a vertex', () => {
