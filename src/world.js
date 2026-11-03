@@ -10,6 +10,8 @@ const CAMERA_DISTANCE = 11;
 const CAMERA_FOV = 35;
 const TARGET_Y = 0.85;
 const UP = new GFX.Vector3(0, 1, 0);
+const DOWN = new GFX.Vector3(0, -1, 0);
+const REST_GAP = 0.012;
 const TAU = Math.PI * 2;
 
 function mat(color, roughness = 0.5, metalness = 0) {
@@ -88,20 +90,34 @@ function createTable(scene, columns, rows) {
   return { group, halfWidth, halfDepth };
 }
 
-function orientationForValue(prop, value, index) {
-  let face = value === null || value === undefined
+function orientationForValue(prop, type, value, index) {
+  const face = (value === null || value === undefined
     ? prop.faces[index % prop.faces.length]
-    : prop.faces.find((entry) => String(entry.number) === String(value));
-  face ??= prop.faces[0];
-  const align = new GFX.Quaternion().setFromUnitVectors(face.normal.clone().normalize(), UP);
+    : prop.faces.find((entry) => String(entry.number) === String(value))) ?? prop.faces[0];
+  // A tetrahedral D4 has no broad face that can point upward while resting.
+  // It must land on a triangular face, with the opposite vertex pointing up.
+  const restingNormal = type === 'd4' ? DOWN : UP;
+  const align = new GFX.Quaternion().setFromUnitVectors(face.normal.clone().normalize(), restingNormal);
   const yaw = new GFX.Quaternion().setFromAxisAngle(UP, index * 0.63 + 0.3);
   return yaw.multiply(align);
+}
+
+function supportOffset(prop, orientation) {
+  const positions = prop.die.geometry.attributes.position;
+  let lowest = Infinity;
+  const vertex = new GFX.Vector3();
+  for (let index = 0; index < positions.count; index++) {
+    vertex.fromBufferAttribute(positions, index).applyQuaternion(orientation);
+    lowest = Math.min(lowest, vertex.y);
+  }
+  if (!Number.isFinite(lowest)) throw new Error('Could not calculate die support height.');
+  return Math.max(0, -lowest * DIE_SCALE) + REST_GAP;
 }
 
 function createDieSlot(scene, spec, index, position, colors) {
   const anchor = new GFX.Group();
   anchor.name = 'die_' + spec.id;
-  anchor.position.set(position[0], DIE_BASE_Y, position[1]);
+  anchor.position.set(position[0], 0, position[1]);
   scene.add(anchor);
 
   const tumble = new GFX.Group();
@@ -113,7 +129,11 @@ function createDieSlot(scene, spec, index, position, colors) {
     markingColor: colors.ink,
   });
   prop.group.scale.setScalar(DIE_SCALE);
-  prop.group.quaternion.copy(orientationForValue(prop, spec.value, index));
+  const settledOrientation = orientationForValue(prop, spec.type, spec.value, index);
+  prop.group.quaternion.copy(settledOrientation);
+  const support = supportOffset(prop, settledOrientation);
+  const baseY = TABLE_TOP + support;
+  anchor.position.y = baseY;
   tumble.add(prop.group);
 
   const ringMaterial = mat(spec.held ? '#d4ad70' : '#80ad96', 0.4, 0.25);
@@ -121,7 +141,7 @@ function createDieSlot(scene, spec, index, position, colors) {
   ringMaterial.opacity = spec.held ? 0.9 : 0.32;
   const ring = new GFX.Mesh(new GFX.TorusGeometry(0.55, 0.012, 8, 48), ringMaterial);
   ring.rotation.x = Math.PI / 2;
-  ring.position.y = -0.48;
+  ring.position.y = TABLE_TOP + REST_GAP - baseY;
   ring.name = 'hold_ring_' + spec.id;
   anchor.add(ring);
 
@@ -135,27 +155,30 @@ function createDieSlot(scene, spec, index, position, colors) {
     ring,
     held: Boolean(spec.held),
     value: spec.value ?? null,
-    baseY: DIE_BASE_Y,
+    baseY,
     baseX: position[0],
     baseZ: position[1],
   };
 }
 
 function topFaceOf(die) {
-  let highest = null;
+  let restingFace = null;
   for (const face of die.prop.faces) {
     const normal = face.normal.clone()
       .applyQuaternion(die.prop.group.quaternion)
       .applyQuaternion(die.tumble.quaternion)
       .normalize();
-    if (!highest || normal.y > highest.height) {
-      highest = { height: normal.y, value: face.number };
+    // D4 values are read from the triangular face against the table;
+    // the opposite vertex is the conventional point-up result indicator.
+    const alignment = die.type === 'd4' ? -normal.y : normal.y;
+    if (!restingFace || alignment > restingFace.alignment) {
+      restingFace = { alignment, value: face.number };
     }
   }
-  if (!highest || highest.height < 0.999) {
-    throw new Error(die.type.toUpperCase() + ' did not settle on a readable upper face.');
+  if (!restingFace || restingFace.alignment < 0.999) {
+    throw new Error(die.type.toUpperCase() + ' did not settle on its proper resting face.');
   }
-  return highest.value;
+  return restingFace.value;
 }
 
 function randomUnitVector(random) {
@@ -276,12 +299,16 @@ export function createDiceWorld(
       duration: 1.2,
       dice: selected.map((die) => {
         const face = die.prop.faces[Math.min(die.prop.faces.length - 1, Math.floor(random() * die.prop.faces.length))];
-        const align = new GFX.Quaternion().setFromUnitVectors(face.normal.clone().normalize(), UP);
+        const restingNormal = die.type === 'd4' ? DOWN : UP;
+        const align = new GFX.Quaternion().setFromUnitVectors(face.normal.clone().normalize(), restingNormal);
         const yaw = new GFX.Quaternion().setFromAxisAngle(UP, random() * TAU);
+        const target = yaw.multiply(align);
         return {
           die,
           start: die.prop.group.quaternion.clone(),
-          target: yaw.multiply(align),
+          target,
+          targetY: TABLE_TOP + supportOffset(die.prop, target),
+          startY: die.baseY,
           spinAxis: randomUnitVector(random),
           turns: 1.7 + random() * 1.5,
           lift: 0.35 + random() * 0.24,
@@ -303,7 +330,8 @@ export function createDiceWorld(
       const { die } = entry;
       die.prop.group.quaternion.copy(entry.start).slerp(entry.target, ease);
       die.tumble.quaternion.setFromAxisAngle(entry.spinAxis, TAU * entry.turns * Math.pow(1 - ease, 1.08));
-      die.anchor.position.y = die.baseY + Math.sin(progress * Math.PI) * entry.lift * (1 - progress * 0.22);
+      const restingY = entry.startY + (entry.targetY - entry.startY) * ease;
+      die.anchor.position.y = restingY + Math.sin(progress * Math.PI) * entry.lift * (1 - progress * 0.22);
       die.anchor.position.x = entry.baseX + Math.sin(progress * Math.PI * 2 + die.index * 0.8) * 0.07 * (1 - progress);
       die.anchor.position.z = entry.baseZ + Math.cos(progress * Math.PI * 2 + die.index) * 0.05 * (1 - progress);
     }
@@ -314,7 +342,9 @@ export function createDiceWorld(
       const die = entry.die;
       die.prop.group.quaternion.copy(entry.target);
       die.tumble.quaternion.identity();
+      die.baseY = entry.targetY;
       die.anchor.position.set(entry.baseX, die.baseY, entry.baseZ);
+      die.ring.position.y = TABLE_TOP + REST_GAP - die.baseY;
       die.value = topFaceOf(die);
       results.push({ id: die.id, value: die.value });
     }

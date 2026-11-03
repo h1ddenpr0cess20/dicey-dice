@@ -6,10 +6,10 @@ import {
   setAllHeld, setDiceCount, setDieHeld,
 } from '../src/sim.js';
 
-test('the default tray starts with five numbered D6', () => {
+test('the default tray starts with five pip-marked D6', () => {
   const state = createTrayState();
   assert.equal(state.dice.length, 5);
-  assert.equal(getDiceCounts(state.dice).d6, 5);
+  assert.equal(getDiceCounts(state.dice)['d6-pips'], 5);
 });
 
 test('all standard RPG dice types have selectable pools', () => {
@@ -32,12 +32,12 @@ test('pool changes preserve existing results and enforce the global cap', () => 
 
 test('Yahtzee, Farkle, craps, D&D, percentile and poker presets map to useful pools', () => {
   const yahtzee = applyPreset(createTrayState(), 'yahtzee');
-  assert.deepEqual(getDiceCounts(yahtzee.dice), { d4: 0, d6: 5, 'd6-pips': 0, d8: 0, d10: 0, d100: 0, d12: 0, d20: 0 });
-  assert.equal(getDiceCounts(applyPreset(yahtzee, 'farkle').dice).d6, 6);
-  assert.equal(getDiceCounts(applyPreset(yahtzee, 'craps').dice).d6, 2);
+  assert.deepEqual(getDiceCounts(yahtzee.dice), { d4: 0, d6: 0, 'd6-pips': 5, d8: 0, d10: 0, d100: 0, d12: 0, d20: 0 });
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'farkle').dice)['d6-pips'], 6);
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'craps').dice)['d6-pips'], 2);
   assert.equal(applyPreset(yahtzee, 'dnd').dice.length, 7);
   assert.equal(getDiceCounts(applyPreset(yahtzee, 'percentile').dice).d100, 1);
-  assert.equal(getDiceCounts(applyPreset(yahtzee, 'poker').dice)['d6-pips'], 5);
+  assert.equal(getDiceCounts(applyPreset(yahtzee, 'pips').dice)['d6-pips'], 5);
 });
 
 test('kept dice are excluded from rerolls and released dice return to the pool', () => {

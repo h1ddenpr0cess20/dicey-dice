@@ -13,12 +13,12 @@ export const DICE_CATALOG = Object.freeze([
 ]);
 
 export const PRESETS = Object.freeze([
-  { id: 'yahtzee', label: 'YAHTZEE', detail: '5 × D6', counts: { d6: 5 } },
-  { id: 'farkle', label: 'FARKLE', detail: '6 × D6', counts: { d6: 6 } },
-  { id: 'craps', label: 'CRAPS', detail: '2 × D6', counts: { d6: 2 } },
+  { id: 'yahtzee', label: 'YAHTZEE', detail: '5 × pip D6', counts: { 'd6-pips': 5 } },
+  { id: 'farkle', label: 'FARKLE', detail: '6 × pip D6', counts: { 'd6-pips': 6 } },
+  { id: 'craps', label: 'CRAPS', detail: '2 × pip D6', counts: { 'd6-pips': 2 } },
   { id: 'dnd', label: 'D&D SET', detail: 'Polyhedral', counts: { d4: 1, d6: 1, d8: 1, d10: 1, d100: 1, d12: 1, d20: 1 } },
   { id: 'percentile', label: 'PERCENTILE', detail: 'D10 + D%', counts: { d10: 1, d100: 1 } },
-  { id: 'poker', label: 'POKER DICE', detail: '5 × Pips', counts: { 'd6-pips': 5 } },
+  { id: 'pips', label: 'PIP DICE', detail: '5 × pip D6', counts: { 'd6-pips': 5 } },
 ]);
 
 const TYPE_BY_ID = new Map(DICE_CATALOG.map((entry) => [entry.id, entry]));
@@ -59,7 +59,7 @@ function buildPool(counts, previous = []) {
   return next;
 }
 
-export function createTrayState(counts = { d6: 5 }) {
+export function createTrayState(counts = { 'd6-pips': 5 }) {
   const normalized = { ...emptyCounts(), ...counts };
   let total = Object.values(normalized).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
   if (total > MAX_DICE) {

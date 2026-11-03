@@ -79,3 +79,40 @@ test('dice finish and hold rings update without changing the result face', () =>
   assert.equal(world.inspect()[0].held, true);
   assert.equal(world.inspect()[0].value, 20);
 });
+
+test('D4 lands flat on a triangular base instead of balancing on a vertex', () => {
+  const stage = makeStage();
+  const world = createDiceWorld(stage);
+  world.setDice([{ id: 'd4-flat', type: 'd4', value: null, held: false }]);
+  const die = world.dice[0];
+  const face = die.prop.faces
+    .map((entry) => ({
+      number: entry.number,
+      y: entry.normal.clone().applyQuaternion(die.prop.group.quaternion).y,
+    }))
+    .sort((a, b) => a.y - b.y)[0];
+  assert.ok(face.y < -0.999, 'a triangular face points straight down');
+  const vertices = die.prop.die.geometry.attributes.position;
+  let lowest = Infinity;
+  const point = new GFX.Vector3();
+  for (let index = 0; index < vertices.count; index++) {
+    point.fromBufferAttribute(vertices, index).applyQuaternion(die.prop.group.quaternion);
+    lowest = Math.min(lowest, point.y);
+  }
+  const worldBottom = die.anchor.position.y + lowest * 0.83;
+  assert.ok(Math.abs(worldBottom - 0.322) < 0.02, 'the resting face touches the felt');
+  assert.equal(world.dice[0].baseY, die.anchor.position.y);
+});
+
+test('rolling a D4 leaves it on a triangular base and reads the resting facet', () => {
+  const world = createDiceWorld(makeStage());
+  world.setDice([{ id: 'd4-roll', type: 'd4', value: null, held: false }]);
+  assert.equal(world.roll(['d4-roll'], () => 0.51), true);
+  const results = finish(world);
+  assert.equal(results.length, 1);
+  const die = world.dice[0];
+  const normals = die.prop.faces.map((face) =>
+    face.normal.clone().applyQuaternion(die.prop.group.quaternion).y);
+  assert.ok(Math.min(...normals) < -0.999, 'the D4 finishes with a whole face against the table');
+  assert.equal(String(results[0].value), String(world.inspect()[0].value));
+});
