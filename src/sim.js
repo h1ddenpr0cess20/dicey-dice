@@ -18,7 +18,6 @@ export const PRESETS = Object.freeze([
   { id: 'craps', label: 'CRAPS', detail: '2 × pip D6', counts: { 'd6-pips': 2 } },
   { id: 'dnd', label: 'D&D SET', detail: 'Polyhedral', counts: { d4: 1, d6: 1, d8: 1, d10: 1, d100: 1, d12: 1, d20: 1 } },
   { id: 'percentile', label: 'PERCENTILE', detail: 'D10 + D%', counts: { d10: 1, d100: 1 } },
-  { id: 'pips', label: 'PIP DICE', detail: '5 × pip D6', counts: { 'd6-pips': 5 } },
 ]);
 
 const TYPE_BY_ID = new Map(DICE_CATALOG.map((entry) => [entry.id, entry]));

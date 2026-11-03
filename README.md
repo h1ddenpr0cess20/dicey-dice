@@ -6,7 +6,7 @@ A browser-based 3D dice tray for tabletop nights, roleplaying games, classic dic
 
 - Full standard polyhedral dice set: D4, D6, pip D6, D8, D10, percentile D%, D12, and D20.
 - Build mixed pools of up to 24 dice, with up to 12 of any one type.
-- Quick setups for Yahtzee, Farkle, craps, D&D, percentile rolls, and pip D6.
+- Quick setups for Yahtzee, Farkle, craps, D&D, and percentile rolls.
 - Pip-marked D6 are the default for general games; the D&D preset uses a numbered D6.
 - Roll all dice or reroll only dice that are not kept.
 - Keep individual results between throws, or release all kept dice.

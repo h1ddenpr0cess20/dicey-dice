@@ -121,7 +121,7 @@ button { color: inherit; }
 .toast.visible { opacity: 1; transform: translate(-50%,0); }
 
 @media (max-width: 900px) {
-  :root { --dock-height: 330px; }
+  :root { --dock-height: 0px; }
   .dock-main { grid-template-columns: minmax(0,1.25fr) minmax(180px,.8fr); grid-template-rows: 1fr; }
   .roll-section { grid-column: 2; grid-row: 1; }
   .finish-section { grid-column: 2; grid-row: 1; margin-top: 70px; }
@@ -139,7 +139,7 @@ button { color: inherit; }
   .section-heading > small { display: none; }
 }
 @media (max-width: 600px) {
-  :root { --dock-height: 432px; }
+  :root { --dock-height: 0px; }
   .topbar { top: max(12px,env(safe-area-inset-top)); left: 14px; right: 14px; }
   .brand { gap: 8px; }
   .brand-mark { width: 24px; height: 24px; }
@@ -155,7 +155,7 @@ button { color: inherit; }
   .result-chip { min-width: 81px; gap: 5px; padding: 4px 5px; }
   .result-chip > b { font-size: 13px; }
   .keep-button { font-size: 6px; }
-  .control-dock { grid-template-rows: 55px 1fr 36px; gap: 6px; padding: 8px 10px max(7px,env(safe-area-inset-bottom)); }
+  .control-dock { height: auto; min-height: 0; grid-template-rows: auto auto auto; gap: 7px; padding: 8px 10px max(8px,env(safe-area-inset-bottom)); }
   .dock-top { align-items: stretch; }
   .preset-area { justify-content: center; gap: 5px; }
   .preset-area > .eyebrow { font-size: 7px; }
@@ -164,7 +164,7 @@ button { color: inherit; }
   .tray-meta { flex-direction: column; justify-content: center; gap: 4px; }
   .tray-meta span { font-size: 7px; }
   .text-button { padding: 4px 5px; font-size: 6px; }
-  .dock-main { grid-template-columns: 1fr; grid-template-rows: 1fr 43px 45px; gap: 5px; padding-top: 6px; }
+  .dock-main { grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 7px; padding-top: 6px; }
   .pool-section { grid-column: 1; grid-row: 1; }
   .dice-controls { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; }
   .dice-type { min-height: 36px; padding: 3px 4px; display: grid; justify-items: center; gap: 2px; }
@@ -177,14 +177,14 @@ button { color: inherit; }
   .roll-options { margin: 0; justify-content: flex-start; }
   .roll-button { min-height: 42px; }
   .roll-caption { display: none; }
-  .dock-history { gap: 8px; padding-top: 4px; }
+  .dock-history { gap: 8px; padding-top: 4px; min-height: 25px; }
   .history-title { flex-direction: column; gap: 1px; }
   .history-title .eyebrow { font-size: 7px; }
   .history-title > small { font-size: 6px; }
   .history-item { max-width: 170px; padding: 3px 5px; font-size: 6px; }
 }
 @media (max-width: 360px) {
-  :root { --dock-height: 402px; }
+  :root { --dock-height: 0px; }
   .top-total span { font-size: 6px; }
   .stage-title h1 { font-size: 30px; }
   .dice-type-label { font-size: 6px; }
