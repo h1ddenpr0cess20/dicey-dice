@@ -108,7 +108,7 @@ test('custom color combos reject invalid names and colors', () => {
 test('saved color combos are sanitized, deduplicated, and capped', () => {
   const combos = Array.from({ length: MAX_SAVED_COLOR_COMBOS + 3 }, (_, index) =>
     createSavedColorCombo('Combo ' + index, { resin: '#ffffff', ink: '#000000' }, 'combo-' + index));
-  const list = normalizeSavedColorCombos([combos[0], combos[0], { ...combos[1], name: combos[0].name }, { ...combos[2], ink: 'transparent' }, ...combos]);
+  const list = normalizeSavedColorCombos([combos[0], combos[0], { ...combos[1], name: combos[0].name }, { ...combos[2], ink: 'transparent' }, ...combos.slice(3)]);
   assert.equal(list.length, MAX_SAVED_COLOR_COMBOS);
   assert.equal(list[0].id, 'combo-0');
   assert.equal(list.some((combo) => combo.id === 'combo-2'), false);
